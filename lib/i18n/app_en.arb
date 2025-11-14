@@ -1,0 +1,111 @@
+{
+  "global_searchBarLabel": "Search for groups, subjects...",
+  "@global_searchBarLabel": {
+    "description": "Search bar label"
+  },
+  "featuredGroups": "Featured Groups",
+  "popularSubjects": "Popular Subjects",
+  "loginToYourAccount": "Login to your Account",
+  "email": "Email",
+  "password": "Password",
+  "signIn": "Sign in",
+  "dontHaveAccount": "Don't have an account?",
+  "signUp": "Sign up",
+  "pleaseEnterAllFields": "Please enter all fields",
+  "profile_joined": "Joined",
+  "@profile_joined": {
+    "description": "Tag joined {year}"
+  },
+  "profile_groups": "Groups",
+  "@profile_groups": {
+    "description": "Group stats bottom label"
+  },
+  "profile_docs": "Docs",
+  "@profile_docs": {
+    "description": "Doc stats bottom label"
+  },
+  "profile_friends": "Friends",
+  "@profile_friends": {
+    "description": "Friend stats bottom label"
+  },
+  "profile_badgeSectionTitle": "My Badges",
+  "@profile_badgeSectionTitle": {
+    "description": "Badge Section Title"
+  },
+  "profile_activitySummarySectionTitle": "Activity Overview",
+  "@profile_activitySummarySectionTitle": {
+    "description": "Activity Summary Section Title"
+  },
+  "profile_textNumberHours": "Study hours:",
+  "@profile_textNumberHours": {
+    "description": "Text Number of Hours"
+  },
+  "profile_mondayTag": "Mon",
+  "@profile_mondayTag": {
+    "description": "Abbreviation for Monday"
+  },
+  "profile_tuesdayTag": "Tue",
+  "@profile_tuesdayTag": {
+    "description": "Abbreviation for Tuesday"
+  },
+  "profile_wednesdayTag": "Wed",
+  "@profile_wednesdayTag": {
+    "description": "Abbreviation for Wednesday"
+  },
+  "profile_thursdayTag": "Thu",
+  "@profile_thursdayTag": {
+    "description": "Abbreviation for Thursday"
+  },
+  "profile_fridayTag": "Fri",
+  "@profile_fridayTag": {
+    "description": "Abbreviation for Friday"
+  },
+  "profile_saturdayTag": "Sat",
+  "@profile_saturdayTag": {
+    "description": "Abbreviation for Saturday"
+  },
+  "profile_sundayTag": "Sun",
+  "@profile_sundayTag": {
+    "description": "Abbreviation for Sunday"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings screen title"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language option in settings"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language name"
+  },
+  "spanish": "Spanish",
+  "@spanish": {
+    "description": "Spanish language name"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications section"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme section"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "Light theme"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark theme"
+  },
+  "predetermined": "Default",
+  "@predetermined": {
+    "description": "Default option"
+  },
+  "system": "System",
+  "@system": {
+    "description": "System theme"
+  }
+}

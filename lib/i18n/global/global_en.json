@@ -1,0 +1,6 @@
+{
+  "global_searchBarLabel": "Search for groups, subjects...",
+  "@global_searchBarLabel": {
+    "description": "Search bar label"
+  }
+}

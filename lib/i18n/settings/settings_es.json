@@ -1,0 +1,42 @@
+{
+  "settings": "Configuración",
+  "@settings": {
+    "description": "Título de la pantalla de configuración"
+  },
+  "language": "Idioma",
+  "@language": {
+    "description": "Opción de idioma en configuración"
+  },
+  "english": "Inglés",
+  "@english": {
+    "description": "Nombre del idioma inglés"
+  },
+  "spanish": "Español",
+  "@spanish": {
+    "description": "Nombre del idioma español"
+  },
+  "notifications": "Notificaciones",
+  "@notifications": {
+    "description": "Sección de notificaciones"
+  },
+  "theme": "Tema",
+  "@theme": {
+    "description": "Sección de tema"
+  },
+  "light": "Claro",
+  "@light": {
+    "description": "Tema claro"
+  },
+  "dark": "Oscuro",
+  "@dark": {
+    "description": "Tema oscuro"
+  },
+  "predetermined": "Predeterminado",
+  "@predetermined": {
+    "description": "Opción predeterminada"
+  },
+  "system": "Sistema",
+  "@system": {
+    "description": "Tema del sistema"
+  }
+}

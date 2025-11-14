@@ -1,0 +1,6 @@
+{
+  "global_searchBarLabel": "Buscar grupos, temas...",
+  "@global_searchBarLabel": {
+    "description": "Etiqueta de la barra de búsqueda"
+  }
+}

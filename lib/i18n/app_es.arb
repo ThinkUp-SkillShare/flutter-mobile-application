@@ -1,0 +1,111 @@
+{
+  "global_searchBarLabel": "Buscar grupos, temas...",
+  "@global_searchBarLabel": {
+    "description": "Etiqueta de la barra de búsqueda"
+  },
+  "featuredGroups": "Grupos Destacados",
+  "popularSubjects": "Categorías Populares",
+  "loginToYourAccount": "Inicia sesión en tu cuenta",
+  "email": "Correo electrónico",
+  "password": "Contraseña",
+  "signIn": "Iniciar sesión",
+  "dontHaveAccount": "¿No tienes una cuenta?",
+  "signUp": "Regístrate",
+  "pleaseEnterAllFields": "Por favor ingresa todos los campos",
+  "profile_joined": "Se unió en el",
+  "@profile_joined": {
+    "description": "Etiqueta se unió {año}"
+  },
+  "profile_groups": "Grupos",
+  "@profile_groups": {
+    "description": "Etiqueta inferior de estadísticas de grupos"
+  },
+  "profile_docs": "Archivos",
+  "@profile_docs": {
+    "description": "Etiqueta inferior de estadísticas de archivos"
+  },
+  "profile_friends": "Amigos",
+  "@profile_friends": {
+    "description": "Etiqueta inferior de estadísticas de amigos"
+  },
+  "profile_badgeSectionTitle": "Mis Insignias",
+  "@profile_badgeSectionTitle": {
+    "description": "Título de la sección de insignias"
+  },
+  "profile_activitySummarySectionTitle": "Resumen de Actividad",
+  "@profile_activitySummarySectionTitle": {
+    "description": "Título de la sección de resumen de actividad"
+  },
+  "profile_textNumberHours": "Horas de estudio",
+  "@profile_textNumberHours": {
+    "description": "Texto número de horas"
+  },
+  "profile_mondayTag": "Lun",
+  "@profile_mondayTag": {
+    "description": "Abreviación de lunes"
+  },
+  "profile_tuesdayTag": "Mar",
+  "@profile_tuesdayTag": {
+    "description": "Abreviación de martes"
+  },
+  "profile_wednesdayTag": "Mié",
+  "@profile_wednesdayTag": {
+    "description": "Abreviación de miércoles"
+  },
+  "profile_thursdayTag": "Jue",
+  "@profile_thursdayTag": {
+    "description": "Abreviación de jueves"
+  },
+  "profile_fridayTag": "Vie",
+  "@profile_fridayTag": {
+    "description": "Abreviación de viernes"
+  },
+  "profile_saturdayTag": "Sáb",
+  "@profile_saturdayTag": {
+    "description": "Abreviación de sábado"
+  },
+  "profile_sundayTag": "Dom",
+  "@profile_sundayTag": {
+    "description": "Abreviación de domingo"
+  },
+  "settings": "Configuración",
+  "@settings": {
+    "description": "Título de la pantalla de configuración"
+  },
+  "language": "Idioma",
+  "@language": {
+    "description": "Opción de idioma en configuración"
+  },
+  "english": "Inglés",
+  "@english": {
+    "description": "Nombre del idioma inglés"
+  },
+  "spanish": "Español",
+  "@spanish": {
+    "description": "Nombre del idioma español"
+  },
+  "notifications": "Notificaciones",
+  "@notifications": {
+    "description": "Sección de notificaciones"
+  },
+  "theme": "Tema",
+  "@theme": {
+    "description": "Sección de tema"
+  },
+  "light": "Claro",
+  "@light": {
+    "description": "Tema claro"
+  },
+  "dark": "Oscuro",
+  "@dark": {
+    "description": "Tema oscuro"
+  },
+  "predetermined": "Predeterminado",
+  "@predetermined": {
+    "description": "Opción predeterminada"
+  },
+  "system": "Sistema",
+  "@system": {
+    "description": "Tema del sistema"
+  }
+}

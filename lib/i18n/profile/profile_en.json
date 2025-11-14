@@ -1,0 +1,58 @@
+{
+  "profile_joined": "Joined",
+  "@profile_joined": {
+    "description": "Tag joined {year}"
+  },
+  "profile_groups": "Groups",
+  "@profile_groups": {
+    "description": "Group stats bottom label"
+  },
+  "profile_docs": "Docs",
+  "@profile_docs": {
+    "description": "Doc stats bottom label"
+  },
+  "profile_friends": "Friends",
+  "@profile_friends": {
+    "description": "Friend stats bottom label"
+  },
+  "profile_badgeSectionTitle": "My Badges",
+  "@profile_badgeSectionTitle": {
+    "description": "Badge Section Title"
+  },
+  "profile_activitySummarySectionTitle": "Activity Overview",
+  "@profile_activitySummarySectionTitle": {
+    "description": "Activity Summary Section Title"
+  },
+  "profile_textNumberHours": "Study hours:",
+  "@profile_textNumberHours": {
+    "description": "Text Number of Hours"
+  },
+  "profile_mondayTag": "Mon",
+  "@profile_mondayTag": {
+    "description": "Abbreviation for Monday"
+  },
+  "profile_tuesdayTag": "Tue",
+  "@profile_tuesdayTag": {
+    "description": "Abbreviation for Tuesday"
+  },
+  "profile_wednesdayTag": "Wed",
+  "@profile_wednesdayTag": {
+    "description": "Abbreviation for Wednesday"
+  },
+  "profile_thursdayTag": "Thu",
+  "@profile_thursdayTag": {
+    "description": "Abbreviation for Thursday"
+  },
+  "profile_fridayTag": "Fri",
+  "@profile_fridayTag": {
+    "description": "Abbreviation for Friday"
+  },
+  "profile_saturdayTag": "Sat",
+  "@profile_saturdayTag": {
+    "description": "Abbreviation for Saturday"
+  },
+  "profile_sundayTag": "Sun",
+  "@profile_sundayTag": {
+    "description": "Abbreviation for Sunday"
+  }
+}

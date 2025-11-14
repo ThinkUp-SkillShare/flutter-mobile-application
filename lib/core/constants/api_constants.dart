@@ -1,0 +1,35 @@
+class ApiConstants {
+  // static const String baseUrl = 'http://192.168.0.206:5118/api';
+  static const String baseUrl = 'http://10.0.2.2:5118/api';
+
+  static const String loginEndpoint = '$baseUrl/Auth/login';
+  static const String registerEndpoint = '$baseUrl/Auth/register';
+  static const String validateTokenEndpoint = '$baseUrl/Auth/validate-token';
+  static const String testConnectionEndpoint = '$baseUrl/Auth/test-connection';
+
+  static String get studentBase => '$baseUrl/student';
+  static String studentByUserId(int userId) => '$studentBase/user/$userId';
+  static String studentById(int id) => '$studentBase/$id';
+
+  static String get studyGroupBase => '$baseUrl/StudyGroup';
+  static String studyGroupsByUserId(int userId) => '$studyGroupBase/user/$userId';
+  static String recentGroups(int userId) => '$studyGroupBase/recent?userId=$userId';
+  static String studyGroupById(int id, {int? userId}) =>
+      userId != null ? '$studyGroupBase/$id?userId=$userId' : '$studyGroupBase/$id';
+  static String joinGroup(int groupId) => '$studyGroupBase/$groupId/join';
+  static String leaveGroup(int groupId) => '$studyGroupBase/$groupId/leave';
+  static String groupMembers(int groupId) => '$studyGroupBase/$groupId/members';
+
+  static String get subjectBase => '$baseUrl/Subject';
+  static String subjectById(int id) => '$subjectBase/$id';
+
+  static String groupChat(int groupId) => '$studyGroupBase/$groupId/chat/messages';
+  static String groupChatMessage(int groupId, int messageId) =>
+      '$studyGroupBase/$groupId/chat/messages/$messageId';
+  static String messageReactions(int groupId, int messageId) =>
+      '$studyGroupBase/$groupId/chat/messages/$messageId/reactions';
+  static String messageReaction(int groupId, int messageId, int reactionId) =>
+      '$studyGroupBase/$groupId/chat/messages/$messageId/reactions/$reactionId';
+  static String markMessageAsRead(int groupId, int messageId) =>
+      '$studyGroupBase/$groupId/chat/messages/$messageId/read';
+}

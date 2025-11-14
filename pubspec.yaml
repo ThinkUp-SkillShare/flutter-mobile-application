@@ -1,0 +1,65 @@
+name: skill_share
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  provider: ^6.1.1
+  fl_chart: ^0.70.0
+  flutter_launcher_icons: ^0.14.4
+  path_provider: ^2.1.1
+  crypto: ^3.0.3
+  image_picker: ^1.0.4
+  file_picker: ^10.2.0
+  record: ^6.1.0
+  audioplayers: ^6.0.0
+  permission_handler: ^12.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  dio: ^5.0.0
+  get_it: ^7.0.0
+  flutter_secure_storage: ^8.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo/SkillShare_logo.png"
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/logo/
+    - assets/external_logos/
+
+  fonts:
+    - family: Sarabun
+      fonts:
+        - asset: assets/fonts/Sarabun-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Sarabun-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Sarabun-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Sarabun-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Sarabun-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Sarabun-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Sarabun-ExtraBold.ttf
+          weight: 800
