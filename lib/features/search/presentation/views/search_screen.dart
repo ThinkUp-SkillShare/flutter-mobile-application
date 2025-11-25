@@ -10,6 +10,8 @@ import '../widgets/search_app_bar.dart';
 import '../widgets/section_header.dart';
 import '../widgets/statistics_cards.dart';
 import '../widgets/subject_grid.dart';
+// Añadir este import
+import '../../../groups/presentation/views/group_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -160,19 +162,34 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               );
             }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: CompactGroupCard(
-                group: viewModel.filteredGroups[index],
-                onJoinGroup: (groupId) async {
-                  final success = await viewModel.joinGroup(groupId);
-                  if (success && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Joined group successfully')),
-                    );
-                    viewModel.loadData();
-                  }
-                },
+
+            final group = viewModel.filteredGroups[index];
+            return GestureDetector(
+              onTap: () {
+                // Navegar al GroupDetailScreen cuando se hace clic
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GroupDetailScreen(
+                      groupId: group['id'] ?? 0,
+                    ),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: CompactGroupCard(
+                  group: group,
+                  onJoinGroup: (groupId) async {
+                    final success = await viewModel.joinGroup(groupId);
+                    if (success && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Joined group successfully')),
+                      );
+                      viewModel.loadData();
+                    }
+                  },
+                ),
               ),
             );
           },
@@ -225,7 +242,20 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: viewModel.recommendedGroups.length,
               itemBuilder: (context, index) {
-                return LargeGroupCard(group: viewModel.recommendedGroups[index]);
+                final group = viewModel.recommendedGroups[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupDetailScreen(
+                          groupId: group['id'] ?? 0,
+                        ),
+                      ),
+                    );
+                  },
+                  child: LargeGroupCard(group: group),
+                );
               },
             ),
           ),
@@ -250,7 +280,20 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                return MediumGroupCard(group: viewModel.popularGroups[index]);
+                final group = viewModel.popularGroups[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupDetailScreen(
+                          groupId: group['id'] ?? 0,
+                        ),
+                      ),
+                    );
+                  },
+                  child: MediumGroupCard(group: group),
+                );
               },
               childCount: viewModel.popularGroups.length,
             ),
@@ -274,7 +317,20 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: viewModel.trendingGroups.length,
               itemBuilder: (context, index) {
-                return TrendingGroupCard(group: viewModel.trendingGroups[index]);
+                final group = viewModel.trendingGroups[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupDetailScreen(
+                          groupId: group['id'] ?? 0,
+                        ),
+                      ),
+                    );
+                  },
+                  child: TrendingGroupCard(group: group),
+                );
               },
             ),
           ),
@@ -293,20 +349,33 @@ class _SearchScreenState extends State<SearchScreen> {
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: CompactGroupCard(
-                    group: viewModel.newGroups[index],
-                    onJoinGroup: (groupId) async {
-                      final success = await viewModel.joinGroup(groupId);
-                      if (success && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Joined group successfully')),
-                        );
-                        viewModel.loadData();
-                      }
-                    },
-                    showNewBadge: true,
+                final group = viewModel.newGroups[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupDetailScreen(
+                          groupId: group['id'] ?? 0,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: CompactGroupCard(
+                      group: group,
+                      onJoinGroup: (groupId) async {
+                        final success = await viewModel.joinGroup(groupId);
+                        if (success && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Joined group successfully')),
+                          );
+                          viewModel.loadData();
+                        }
+                      },
+                      showNewBadge: true,
+                    ),
                   ),
                 );
               },

@@ -5,10 +5,10 @@ import '../../../settings/presentation/views/settings_screen.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../services/student_service.dart';
 import '../widgets/group_card_widget.dart';
-import '../widgets/badge_card_widget.dart';
 import '../widgets/profile_stats_widget.dart';
-import '../widgets/activity_chart_widget.dart';
+import 'all_user_groups_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../../groups/services/group_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,59 +21,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final StudentService _studentService = StudentService();
   Student? _student;
   bool _isLoading = true;
-
-  final List<String> groupNames = [
-    'Humanities',
-    'Humanities',
-    'Fundamental concepts of polit...',
-  ];
-
-  final List<String> groupDescriptions = [
-    'Lorem ipsum dolor sit amet consectetur adipiscing t amet consectetur adipiscing t amet consectetur adipiscing t amet consectetur adipiscing t amet consectetur adipiscing',
-    'Lorem ipsum dolor sit amet consectetur adipiscing elit.',
-    'Legislative concepts, main laws, human rights',
-  ];
-
-  final List<String> groupMembers = [
-    '37 members',
-    '85 members',
-    '12 members',
-  ];
-
-  final List<String> groupCovers = [
-    'assets/images/programacion.jpg',
-    'assets/images/musica.jpg',
-    'assets/images/socrates.jpg',
-  ];
-
-  final List<int> studyHours = [3, 4, 2, 5, 6, 3, 7];
-  final List<String> weekDays = [
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-    'Sun',
-  ];
-
-  final List<Map<String, dynamic>> badges = [
-    {
-      'name': 'Outstanding student',
-      'icon': Icons.school,
-      'color': Colors.blue,
-    },
-    {
-      'name': 'Active participation',
-      'icon': Icons.forum,
-      'color': Colors.green,
-    },
-    {
-      'name': 'Quiz Master',
-      'icon': Icons.quiz,
-      'color': Colors.orange,
-    },
-  ];
+  List<Map<String, dynamic>> _userGroups = [];
+  int _createdGroupsCount = 0;
+  int _joinedGroupsCount = 0;
 
   @override
   void initState() {
@@ -84,10 +34,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadStudentData() async {
     try {
       final int? userId = await AuthService.getUserId();
+      final String? token = await AuthService.getAuthToken();
 
       print('🔍 DEBUG - UserId from AuthService: $userId');
 
-      if (userId == null) {
+      if (userId == null || token == null) {
         print('❌ No authenticated user found');
         setState(() {
           _isLoading = false;
@@ -101,8 +52,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       print('📊 DEBUG - Student data received: $student');
 
+      // Cargar grupos del usuario
+      final userGroups = await GroupService.getUserGroups(userId, token);
+      print('📊 DEBUG - User groups loaded: ${userGroups.length}');
+
+      // Contar grupos creados vs unidos
+      int createdCount = 0;
+      int joinedCount = 0;
+
+      for (var group in userGroups) {
+        print('📊 DEBUG - Group: ${group['name']}, created_by: ${group['created_by']}, userId: $userId');
+        if (group['created_by'] == userId) {
+          createdCount++;
+        } else {
+          joinedCount++;
+        }
+      }
+
+      print('📊 DEBUG - Created groups: $createdCount, Joined groups: $joinedCount');
+
       setState(() {
         _student = student;
+        _userGroups = userGroups;
+        _createdGroupsCount = createdCount;
+        _joinedGroupsCount = joinedCount;
         _isLoading = false;
       });
 
@@ -110,8 +83,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         print('⚠️ No student profile found for user $userId');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No student profile found. Please complete your profile.'),
-            backgroundColor: Colors.orange,
+            content: const Text('No student profile found. Please complete your profile.'),
+            backgroundColor: Colors.orange.shade700,
           ),
         );
       }
@@ -121,12 +94,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _isLoading = false;
         _student = null;
+        _userGroups = [];
+        _createdGroupsCount = 0;
+        _joinedGroupsCount = 0;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading profile: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: Colors.red.shade700,
         ),
       );
     }
@@ -139,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       SnackBar(
         content: Text('Usuario @$username copiado al portapapeles'),
         duration: const Duration(seconds: 2),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.green.shade700,
       ),
     );
   }
@@ -157,6 +133,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _student = updatedStudent;
             });
           },
+        ),
+      ),
+    );
+  }
+
+  void _navigateToAllGroups() {
+    if (_userGroups.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AllUserGroupsScreen(
+          userGroups: _userGroups,
+          userId: _student?.userId ?? 0,
         ),
       ),
     );
@@ -201,24 +191,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               child: ClipOval(
-                child: Image.network(
-                  'https://i.pinimg.com/736x/12/05/9e/12059e4b1e9db778b8ee2dc9b4290232.jpg',
+                child: _student?.user?.profileImage != null &&
+                    _student!.user!.profileImage!.isNotEmpty
+                    ? Image.network(
+                  _student!.user!.profileImage!,
                   width: 150,
                   height: 150,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) {
+                      return child;
+                    }
                     return Container(
-                      width: 120,
-                      height: 120,
-                      color: Colors.grey.shade300,
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.grey.shade500,
-                        size: 50,
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: progress.expectedTotalBytes != null
+                              ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                              : null,
+                        ),
                       ),
                     );
                   },
-                ),
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildDefaultAvatar();
+                  },
+                )
+                    : _buildDefaultAvatar(),
               ),
             ),
             Positioned(
@@ -291,8 +295,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         const SizedBox(height: 4),
         Text(
-          'Joined 2025',
+          'Joined ${_student?.joinedYear ?? 2025}',
           style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      width: 150,
+      height: 150,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.person,
+        color: Colors.grey.shade500,
+        size: 50,
+      ),
+    );
+  }
+
+  Widget _buildGroupsSection() {
+    if (_userGroups.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.group_outlined,
+              size: 50,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No perteneces a ningún grupo',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Únete a grupos para empezar a colaborar',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Mis Grupos (${_userGroups.length})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.black87,
+                ),
+              ),
+              TextButton(
+                onPressed: _navigateToAllGroups,
+                child: const Text(
+                  'Ver todos',
+                  style: TextStyle(
+                    color: Color(0xFF0F4C75),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 265,
+          child: ListView.builder(
+            padding: const EdgeInsets.only(left: 20, right: 8),
+            scrollDirection: Axis.horizontal,
+            itemCount: _userGroups.length > 3 ? 3 : _userGroups.length,
+            itemBuilder: (context, index) {
+              final group = _userGroups[index];
+              final isCreator = group['created_by'] == _student?.userId;
+
+              String imageUrl = '';
+              if (group['coverImage'] != null && group['coverImage'].toString().isNotEmpty) {
+                imageUrl = group['coverImage'].toString();
+              } else if (group['cover_image'] != null && group['cover_image'].toString().isNotEmpty) {
+                imageUrl = group['cover_image'].toString();
+              }
+
+              return GroupCardWidget(
+                groupName: group['name'] ?? 'Sin nombre',
+                groupDescription: group['description'] ?? '',
+                groupMembers: '${group['memberCount'] ?? 0} miembros',
+                imagePath: imageUrl,
+                isUserCreator: isCreator,
+                groupId: group['id'] ?? 0,
+              );
+            },
+          ),
         ),
       ],
     );
@@ -346,97 +474,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: _buildProfileInfo(),
-            ),
+          ? const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F4C75)),
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadStudentData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: _buildProfileInfo(),
+              ),
 
-            ProfileStatsWidget(
-              groupsCount: '15',
-              docsCount: '09',
-              friendsCount: '22',
-            ),
+              ProfileStatsWidget(
+                groupsCount: _createdGroupsCount.toString(),
+                docsCount: '0',
+                friendsCount: _joinedGroupsCount.toString(),
+              ),
 
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'My badges',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 120,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(left: 20, right: 8),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: badges.length,
-                    itemBuilder: (context, index) => BadgeCardWidget(
-                      badge: badges[index],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              // Sección de grupos
+              _buildGroupsSection(),
 
-            const SizedBox(height: 32),
-
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'Joined Groups',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 220,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(left: 20, right: 8),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: groupCovers.length,
-                    itemBuilder: (context, index) => GroupCardWidget(
-                      groupName: groupNames[index],
-                      groupDescription: groupDescriptions[index],
-                      groupMembers: groupMembers[index],
-                      imagePath: groupCovers[index],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 25),
-
-            ActivityChartWidget(
-              studyHours: studyHours,
-              weekDays: weekDays,
-              totalStudyHours: 30,
-            ),
-
-            const SizedBox(height: 32),
-          ],
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );

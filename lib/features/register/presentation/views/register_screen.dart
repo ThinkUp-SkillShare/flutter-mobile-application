@@ -1,84 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/features/auth/domain/use_cases/login_use_case.dart';
-import 'package:skill_share/features/register/presentation/views/register_screen.dart';
+import 'package:skill_share/features/auth/presentation/views/login_screen.dart';
+import 'package:skill_share/features/register/presentation/views/welcome_registration_screen.dart';
 import 'package:skill_share/i18n/app_localizations.dart';
 
-import '../../application/auth_service.dart';
-import '../../infrastructure/datasources/remote/auth_remote_data_source.dart';
-import '../../infrastructure/datasources/remote/auth_remote_data_source_impl.dart';
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _repeatPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  late final LoginUseCase _loginUseCase;
-
   bool _obscurePassword = true;
+  bool _obscureRepeatPassword = true;
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loginUseCase = GetIt.instance<LoginUseCase>();
-  }
-
-  void _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    final String email = _emailController.text.trim();
-    final String password = _passwordController.text.trim();
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      print('🔗 Testing connection to backend...');
-      final authDataSource = GetIt.instance<AuthRemoteDataSource>();
-      final connectionSuccess = await (authDataSource as AuthRemoteDataSourceImpl).testConnection();
-
-      if (!connectionSuccess) {
-        throw Exception('Cannot connect to server. Please check if backend is running.');
-      }
-
-      print('✅ Connection successful, proceeding with login...');
-
-      final (user, token) = await _loginUseCase.execute(email, password);
-
-      if (user.userId != null) {
-        await AuthService.saveUserData(user.userId!, user.email, token);
-        print('💾 User data saved: userId=${user.userId}, email=${user.email}');
-      }
-
-      print('🎉 Login successful! Navigating to home...');
-      _showSnackBar('Login successful! Welcome ${user.email}', isError: false);
-
-      // Navigate to home
-      Navigator.pushReplacementNamed(context, "/home");
-
-    } catch (e) {
-      print('❌ Login error: $e');
-      _showSnackBar(e.toString(), isError: true);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
@@ -100,37 +41,49 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
+  String? _validateRepeatPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please repeat your password';
+    }
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
     return emailRegex.hasMatch(email);
   }
 
-  void _navigateToSignUp() {
+  void _navigateToWelcome() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SignUpScreen()),
-    );
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+      MaterialPageRoute(
+        builder: (context) => WelcomeRegistrationScreen(
+          email: email,
+          password: password,
         ),
       ),
     );
   }
 
+  void _navigateToLogin() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundPrimary,
       body: SafeArea(
@@ -140,19 +93,30 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 80),
-                  _buildLogo(),
-                  const SizedBox(height: 50),
-                  _buildTitle(localizations),
                   const SizedBox(height: 40),
-                  _buildEmailField(localizations),
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: AppTheme.textImportant),
+                    onPressed: _navigateToLogin,
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
+                  ),
                   const SizedBox(height: 20),
-                  _buildPasswordField(localizations),
+                  _buildLogo(),
+                  const SizedBox(height: 30),
+                  _buildTitle(),
+                  const SizedBox(height: 10),
+                  _buildSubtitle(),
+                  const SizedBox(height: 40),
+                  _buildEmailField(),
+                  const SizedBox(height: 20),
+                  _buildPasswordField(),
+                  const SizedBox(height: 20),
+                  _buildRepeatPasswordField(),
                   const SizedBox(height: 36),
-                  _buildSignInButton(localizations),
-                  const SizedBox(height: 50),
-                  _buildSignUpRedirect(localizations),
+                  _buildSignUpButton(),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -166,26 +130,42 @@ class _LoginScreenState extends State<LoginScreen> {
     return Center(
       child: Image.asset(
         "assets/logo/SkillShare_logo.png",
-        height: 120,
-        width: 120,
+        height: 100,
+        width: 100,
         fit: BoxFit.contain,
       ),
     );
   }
 
-  Widget _buildTitle(AppLocalizations localizations) {
-    return Text(
-      localizations.loginToYourAccount,
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppTheme.textImportant,
-        fontFamily: 'Sarabun',
+  Widget _buildTitle() {
+    return Center(
+      child: Text(
+        'SkillShare',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.textImportant,
+          fontFamily: 'Sarabun',
+        ),
       ),
     );
   }
 
-  Widget _buildEmailField(AppLocalizations localizations) {
+  Widget _buildSubtitle() {
+    return Center(
+      child: Text(
+        'Welcome!',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textImportant,
+          fontFamily: 'Sarabun',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmailField() {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
@@ -201,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
           color: AppTheme.iconLessImportant,
           size: 20,
         ),
-        labelText: localizations.email,
+        labelText: 'Email',
         labelStyle: TextStyle(
           fontSize: 16,
           color: AppTheme.iconLessImportant,
@@ -223,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildPasswordField(AppLocalizations localizations) {
+  Widget _buildPasswordField() {
     return TextFormField(
       controller: _passwordController,
       obscureText: _obscurePassword,
@@ -239,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
           color: AppTheme.iconLessImportant,
           size: 20,
         ),
-        labelText: localizations.password,
+        labelText: 'Password',
         labelStyle: TextStyle(
           fontSize: 16,
           color: AppTheme.iconLessImportant,
@@ -273,12 +253,62 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSignInButton(AppLocalizations localizations) {
+  Widget _buildRepeatPasswordField() {
+    return TextFormField(
+      controller: _repeatPasswordController,
+      obscureText: _obscureRepeatPassword,
+      validator: _validateRepeatPassword,
+      style: TextStyle(
+        fontSize: 16,
+        color: AppTheme.textImportant,
+        fontFamily: 'Sarabun',
+      ),
+      decoration: InputDecoration(
+        prefixIcon: Icon(
+          Icons.lock_outline,
+          color: AppTheme.iconLessImportant,
+          size: 20,
+        ),
+        labelText: 'Repeat password',
+        labelStyle: TextStyle(
+          fontSize: 16,
+          color: AppTheme.iconLessImportant,
+          fontFamily: 'Sarabun',
+          fontWeight: FontWeight.normal,
+        ),
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        filled: true,
+        fillColor: AppTheme.backgroundSecondary,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscureRepeatPassword ? Icons.visibility_off : Icons.visibility,
+            color: AppTheme.iconLessImportant,
+            size: 20,
+          ),
+          onPressed: () {
+            setState(() {
+              _obscureRepeatPassword = !_obscureRepeatPassword;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignUpButton() {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _login,
+        onPressed: _isLoading ? null : _navigateToWelcome,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.highlightedElement,
           foregroundColor: Colors.white,
@@ -288,17 +318,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
-        child: _isLoading
-            ? const SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
-            : Text(
-          localizations.signIn,
+        child: Text(
+          'Sign up',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -310,40 +331,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSignUpRedirect(AppLocalizations localizations) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          localizations.dontHaveAccount,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.textGeneral,
-            fontFamily: 'Sarabun',
-            fontWeight: FontWeight.normal,
-          ),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: _navigateToSignUp,
-          child: Text(
-            localizations.signUp,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.importancePrimary,
-              fontFamily: 'Sarabun',
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _repeatPasswordController.dispose();
     super.dispose();
   }
 }

@@ -13,6 +13,42 @@ class UserEntity {
     this.createdAt,
   });
 
+  factory UserEntity.fromJson(Map<String, dynamic> json) {
+    return UserEntity(
+      userId: json['user_id'] ?? json['userId'],
+      email: json['email'],
+      password: json['password'] ?? '',
+      profileImage: json['profile_image'] ?? json['profileImage'],
+      createdAt: json['created_at'] ?? json['createdAt'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (userId != null) 'userId': userId,
+      'email': email,
+      'password': password,
+      if (profileImage != null) 'profileImage': profileImage,
+      if (createdAt != null) 'createdAt': createdAt,
+    };
+  }
+
+  UserEntity copyWith({
+    int? userId,
+    String? email,
+    String? password,
+    String? profileImage,
+    String? createdAt,
+  }) {
+    return UserEntity(
+      userId: userId ?? this.userId,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      profileImage: profileImage ?? this.profileImage,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

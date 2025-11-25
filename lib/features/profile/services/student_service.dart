@@ -26,6 +26,14 @@ class StudentService {
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         print('✅ DEBUG - Student data parsed: $jsonData');
+
+        // Verificar si viene la información del usuario
+        if (jsonData['user'] != null) {
+          print('✅ DEBUG - User data included in response');
+        } else {
+          print('⚠️ DEBUG - User data NOT included in response');
+        }
+
         return Student.fromJson(jsonData);
       } else if (response.statusCode == 404) {
         print('❌ DEBUG - Student not found for userId: $userId');
@@ -56,8 +64,12 @@ class StudentService {
         body: json.encode(updateData),
       );
 
+      print('📡 DEBUG - Update student response: ${response.statusCode}');
+      print('📡 DEBUG - Update student body: ${response.body}');
+
       if (response.statusCode == 200) {
-        return Student.fromJson(json.decode(response.body));
+        final updatedStudentData = json.decode(response.body);
+        return Student.fromJson(updatedStudentData);
       } else {
         throw Exception('Failed to update student: ${response.statusCode}');
       }

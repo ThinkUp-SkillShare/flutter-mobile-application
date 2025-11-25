@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../../i18n/app_localizations.dart';
 import '../../../../providers/language_provider.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../auth/application/auth_service.dart';
+import '../../../auth/presentation/views/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -69,6 +71,10 @@ class SettingsScreen extends StatelessWidget {
                 );
               },
             ),
+
+            const SizedBox(height: 20),
+
+            _buildLogoutItem(context),
           ],
         ),
       ),
@@ -392,6 +398,56 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLogoutItem(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.logout,
+            color: Colors.red,
+            size: 24,
+          ),
+        ),
+        title: const Text(
+          "Cerrar sesión",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.red,
+          ),
+        ),
+        onTap: () async {
+          await AuthService.clearUserData();
+
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (_) => false,
+          );
+        },
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
     );
   }
 }

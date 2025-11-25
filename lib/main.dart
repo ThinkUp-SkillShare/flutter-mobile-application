@@ -6,12 +6,13 @@ import 'package:skill_share/core/dependency_injection.dart';
 import 'package:skill_share/core/themes/app_theme.dart';
 import 'package:skill_share/features/home/presentation/views/home_screen.dart';
 import 'package:skill_share/features/profile/presentation/views/profile_screen.dart';
-import 'package:skill_share/features/register/presentation/views/register.dart';
+import 'package:skill_share/features/register/presentation/views/register_screen.dart';
 import 'package:skill_share/features/shared/bottom_navigation_screen/bottom_navigation_screen.dart';
 import 'package:skill_share/providers/language_provider.dart';
 import 'package:skill_share/providers/theme_provider.dart';
 import 'package:skill_share/i18n/app_localizations.dart';
 
+import 'features/auth/application/auth_service.dart';
 import 'features/auth/presentation/views/login_screen.dart';
 import 'features/home/presentation/view_models/home_view_model.dart';
 import 'features/search/presentation/view_models/search_view_model.dart';
@@ -71,7 +72,27 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
 
-          home: const LoginScreen(),
+          home: FutureBuilder<bool>(
+            future: AuthService.isAuthenticated(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Scaffold(
+                  backgroundColor: AppTheme.backgroundPrimary,
+                  body: Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.highlightedElement,
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasData && snapshot.data == true) {
+                return BottomNavigationScreen();
+              }
+
+              return const LoginScreen();
+            },
+          ),
         );
       },
     );

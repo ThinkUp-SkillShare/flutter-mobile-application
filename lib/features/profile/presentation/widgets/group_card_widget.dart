@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../groups/presentation/views/group_detail_screen.dart';
 
 class GroupCardWidget extends StatelessWidget {
   final String groupName;
   final String groupDescription;
   final String groupMembers;
   final String imagePath;
+  final bool isUserCreator;
+  final int groupId; // Añadir este campo
 
   const GroupCardWidget({
     super.key,
@@ -12,111 +15,171 @@ class GroupCardWidget extends StatelessWidget {
     required this.groupDescription,
     required this.groupMembers,
     required this.imagePath,
+    this.isUserCreator = false,
+    required this.groupId, // Añadir este parámetro
   });
-
-  String truncateText(String text, int maxLength) {
-    if (text.length > maxLength) {
-      return '${text.substring(0, maxLength)}...';
-    }
-    return text;
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 12, bottom: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 1),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => GroupDetailScreen(groupId: groupId),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            height: 120,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+        );
+      },
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen del grupo
+            Container(
+              height: 140,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                color: Colors.grey.shade200,
               ),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade300,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      color: Colors.grey.shade500,
-                      size: 40,
-                    ),
-                  );
-                },
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                child: imagePath.isNotEmpty
+                    ? Image.network(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildDefaultGroupImage();
+                  },
+                )
+                    : _buildDefaultGroupImage(),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  truncateText(groupName, 50),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (groupDescription.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    groupDescription,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+
+            // Contenido
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header con nombre y badge de creador
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            groupName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isUserCreator)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade700,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Creador',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                if (groupMembers.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people_alt,
-                        size: 14,
-                        color: Colors.grey.shade500,
-                      ),
-                      const SizedBox(width: 4),
+
+                    const SizedBox(height: 8),
+
+                    // Descripción
+                    if (groupDescription.isNotEmpty)
                       Text(
-                        groupMembers,
+                        groupDescription,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                    const Spacer(),
+
+                    // Información de miembros
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.people_alt,
+                          size: 14,
                           color: Colors.grey.shade500,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+                        const SizedBox(width: 4),
+                        Text(
+                          groupMembers,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultGroupImage() {
+    return Container(
+      color: Colors.grey.shade300,
+      child: Center(
+        child: Icon(
+          Icons.group,
+          size: 40,
+          color: Colors.grey.shade500,
+        ),
       ),
     );
   }

@@ -45,6 +45,7 @@ flutter:
     - assets/images/
     - assets/logo/
     - assets/external_logos/
+    - assets/images/auth/
 
   fonts:
     - family: Sarabun

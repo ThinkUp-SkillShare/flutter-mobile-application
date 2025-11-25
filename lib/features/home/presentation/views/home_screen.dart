@@ -5,6 +5,7 @@ import '../../../search/presentation/view_models/search_view_model.dart';
 import '../../../settings/presentation/views/settings_screen.dart';
 import '../../../shared/subject/presentation/views/subject_filtered_search_screen.dart';
 import '../view_models/home_view_model.dart';
+import '../../../groups/presentation/views/group_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,55 +61,60 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
       ),
       body: Consumer<HomeViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        builder: (context, viewModel, child) {
+          if (viewModel.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            if (viewModel.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.red[300], size: 64),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: ${viewModel.error}',
-                      style: TextStyle(color: Colors.red[700], fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => viewModel.refreshData(),
-                      child: const Text('Reintentar'),
-                    ),
-                  ],
-                ),
-              );
-            }
+          if (viewModel.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red[300], size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${viewModel.error}',
+                    style: TextStyle(color: Colors.red[700], fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => viewModel.refreshData(),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+          }
 
-            if (viewModel.featuredGroups.isEmpty && viewModel.popularSubjects.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.group_work, color: Colors.grey[400], size: 64),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No hay grupos disponibles',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () => viewModel.refreshData(),
-                      child: const Text('Recargar'),
-                    ),
-                  ],
-                ),
-              );
-            }
+          if (viewModel.featuredGroups.isEmpty &&
+              viewModel.popularSubjects.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.group_work, color: Colors.grey[400], size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay grupos disponibles',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => viewModel.refreshData(),
+                    child: const Text('Recargar'),
+                  ),
+                ],
+              ),
+            );
+          }
 
-            return SingleChildScrollView(
+          return RefreshIndicator(
+            onRefresh: () async {
+              await viewModel.refreshData();
+            },
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -139,7 +145,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         itemCount: viewModel.featuredGroups.length,
                         itemBuilder: (context, index) {
-                          return _buildFeaturedGroupCard(viewModel.featuredGroups[index]);
+                          final group = viewModel.featuredGroups[index];
+                          return GestureDetector(
+                            onTap: () {
+                              // Navegar al GroupDetailScreen cuando se hace clic
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => GroupDetailScreen(
+                                    groupId: group['id'] ?? 0,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: _buildFeaturedGroupCard(group),
+                          );
                         },
                       ),
                     ),
@@ -159,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontSize: 20,
                               color: Color(0xFF2C3E50),
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -170,15 +190,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.6,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 1.6,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
                         itemCount: viewModel.popularSubjects.length,
                         itemBuilder: (context, index) {
-                          return _buildSubjectCard(viewModel.popularSubjects[index]);
+                          return _buildSubjectCard(
+                            viewModel.popularSubjects[index],
+                          );
                         },
                       ),
                     ),
@@ -186,8 +209,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ],
               ),
-            );
-          }
+            ),
+          );
+        },
       ),
     );
   }
@@ -218,7 +242,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 topRight: Radius.circular(20),
               ),
               image: DecorationImage(
-                image: NetworkImage(group['coverImage'] ?? 'https://via.placeholder.com/280x120'),
+                image: NetworkImage(
+                  group['coverImage'] ?? 'https://via.placeholder.com/280x120',
+                ),
                 fit: BoxFit.cover,
               ),
             ),

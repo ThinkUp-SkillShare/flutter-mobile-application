@@ -29,8 +29,21 @@ class AuthService {
 
   static Future<bool> isAuthenticated() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_userIdKey) && prefs.containsKey(_authTokenKey);
+
+    final userId = prefs.getInt(_userIdKey);
+    final token = prefs.getString(_authTokenKey);
+
+    if (userId == null || userId <= 0) {
+      return false;
+    }
+
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
+    return true;
   }
+
 
   static Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();

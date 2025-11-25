@@ -23,6 +23,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _educationCenterController;
   late TextEditingController _phoneController;
   late TextEditingController _countryController;
+  late TextEditingController _profileImageController;
+  late TextEditingController _dateBirthController;
 
   String _selectedGender = '';
   final List<String> _genderOptions = ['male', 'female', 'other', 'prefer_not_to_say'];
@@ -38,8 +40,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nicknameController = TextEditingController(text: widget.student.nickname ?? '');
     _educationCenterController = TextEditingController(text: widget.student.educationalCenter ?? '');
     _countryController = TextEditingController(text: widget.student.country ?? '');
+    _profileImageController = TextEditingController(text: widget.student.user?.profileImage ?? '');
     _selectedGender = widget.student.gender;
     _phoneController = TextEditingController();
+
+    if (widget.student.dateBirth != null) {
+      _dateBirthController = TextEditingController(
+          text: '${widget.student.dateBirth!.year}-${widget.student.dateBirth!.month.toString().padLeft(2, '0')}-${widget.student.dateBirth!.day.toString().padLeft(2, '0')}'
+      );
+    } else {
+      _dateBirthController = TextEditingController();
+    }
   }
 
   @override
@@ -50,6 +61,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _educationCenterController.dispose();
     _phoneController.dispose();
     _countryController.dispose();
+    _profileImageController.dispose();
+    _dateBirthController.dispose();
     super.dispose();
   }
 
@@ -58,12 +71,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String label,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    bool enabled = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: Colors.grey.shade600),
@@ -80,7 +95,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             borderSide: const BorderSide(color: Color(0xFF0F4C75), width: 2),
           ),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
         ),
       ),
     );
@@ -120,7 +135,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                Text(gender),
+                Text(_getGenderLabel(gender)),
               ],
             ),
           );
@@ -136,14 +151,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   IconData _getGenderIcon(String gender) {
     switch (gender.toLowerCase()) {
-      case 'masculino':
+      case 'male':
         return Icons.male;
-      case 'femenino':
+      case 'female':
         return Icons.female;
-      default:
+      case 'other':
         return Icons.transgender;
+      case 'prefer_not_to_say':
+        return Icons.visibility_off_outlined;
+      default:
+        return Icons.help_outline;
     }
   }
+
   String _getGenderLabel(String gender) {
     switch (gender) {
       case 'male': return 'Masculino';
@@ -155,34 +175,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Color _getGenderColor(String gender) {
     switch (gender.toLowerCase()) {
-      case 'masculino':
+      case 'male':
         return Colors.blue;
-      case 'femenino':
+      case 'female':
         return Colors.pink;
-      default:
+      case 'other':
         return Colors.purple;
+      case 'prefer_not_to_say':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: widget.student.dateBirth ?? DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dateBirthController.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
     }
   }
 
   Widget _buildBirthdayField() {
-    final birthdayText = widget.student.dateBirth != null
-        ? '${widget.student.dateBirth!.day}/${widget.student.dateBirth!.month}/${widget.student.dateBirth!.year}'
-        : 'No especificada';
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
-        initialValue: birthdayText,
-        enabled: false,
+        controller: _dateBirthController,
+        readOnly: true,
+        onTap: _selectDate,
         decoration: InputDecoration(
           labelText: 'Fecha de Cumpleaños',
           prefixIcon: Icon(Icons.cake, color: Colors.grey.shade600),
+          suffixIcon: Icon(Icons.calendar_today, color: Colors.grey.shade600),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           filled: true,
-          fillColor: Colors.grey.shade100,
+          fillColor: Colors.grey.shade50,
         ),
       ),
     );
@@ -196,6 +233,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
+      DateTime? dateBirth;
+      if (_dateBirthController.text.isNotEmpty) {
+        dateBirth = DateTime.tryParse(_dateBirthController.text);
+      }
+
       final updateData = {
         'firstName': _firstNameController.text,
         'lastName': _lastNameController.text,
@@ -203,7 +245,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'country': _countryController.text.isEmpty ? null : _countryController.text,
         'educationalCenter': _educationCenterController.text.isEmpty ? null : _educationCenterController.text,
         'gender': _selectedGender,
+        'dateBirth': dateBirth?.toIso8601String(),
+        'profileImage': _profileImageController.text.isEmpty ? null : _profileImageController.text, // Este campo ahora se enviará al backend
       };
+
+      print('🔄 DEBUG - Sending update data: $updateData');
 
       final updatedStudent = await _studentService.updateStudent(widget.student.id, updateData);
 
@@ -230,6 +276,75 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _isSaving = false;
       });
     }
+  }
+
+  Widget _buildProfileImage() {
+    return Center(
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade300,
+                  offset: const Offset(0, 4),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: _profileImageController.text.isNotEmpty
+                  ? Image.network(
+                _profileImageController.text,
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildDefaultEditAvatar();
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return _buildDefaultEditAvatar();
+                },
+              )
+                  : _buildDefaultEditAvatar(),
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _getGenderColor(_selectedGender),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Icon(
+                _getGenderIcon(_selectedGender),
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultEditAvatar() {
+    return Container(
+      width: 120,
+      height: 120,
+      color: Colors.grey.shade300,
+      child: Icon(
+        Icons.person,
+        color: Colors.grey.shade500,
+        size: 50,
+      ),
+    );
   }
 
   @override
@@ -279,63 +394,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Center(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          offset: const Offset(0, 4),
-                          blurRadius: 12,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.network(
-                        'https://i.pinimg.com/1200x/8f/12/19/8f1219d794c7636e2fff83e7e1f554ec.jpg',
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 120,
-                            height: 120,
-                            color: Colors.grey.shade300,
-                            child: Icon(
-                              Icons.person,
-                              color: Colors.grey.shade500,
-                              size: 50,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _getGenderColor(_selectedGender),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Icon(
-                        _getGenderIcon(_selectedGender),
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _buildProfileImage(),
+            const SizedBox(height: 16),
+
+            _buildTextField(
+              controller: _profileImageController,
+              label: 'URL de Foto de Perfil',
+              icon: Icons.link,
+              keyboardType: TextInputType.url,
             ),
-            const SizedBox(height: 32),
+
+            const SizedBox(height: 16),
 
             _buildTextField(
               controller: _firstNameController,
@@ -352,7 +421,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               label: 'Nickname',
               icon: Icons.alternate_email,
             ),
-            _buildBirthdayField(),
+            _buildBirthdayField(), // Ahora es editable
             _buildTextField(
               controller: _educationCenterController,
               label: 'Centro Educativo',

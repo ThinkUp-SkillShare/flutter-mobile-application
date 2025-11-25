@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../auth/domain/entities/user_entity.dart';
 
 class Student {
   final int id;
@@ -11,6 +12,7 @@ class Student {
   final String gender;
   final int? userType;
   final int? userId;
+  final UserEntity? user;
 
   Student({
     required this.id,
@@ -23,6 +25,7 @@ class Student {
     required this.gender,
     this.userType,
     this.userId,
+    this.user,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -37,6 +40,7 @@ class Student {
       gender: json['gender'],
       userType: json['userType'],
       userId: json['userId'],
+      user: json['user'] != null ? UserEntity.fromJson(json['user']) : null,
     );
   }
 
@@ -52,7 +56,36 @@ class Student {
       'gender': gender,
       'userType': userType,
       'userId': userId,
+      'user': user?.toJson(),
     };
+  }
+
+  Student copyWith({
+    int? id,
+    String? firstName,
+    String? lastName,
+    String? nickname,
+    DateTime? dateBirth,
+    String? country,
+    String? educationalCenter,
+    String? gender,
+    int? userType,
+    int? userId,
+    UserEntity? user,
+  }) {
+    return Student(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      nickname: nickname ?? this.nickname,
+      dateBirth: dateBirth ?? this.dateBirth,
+      country: country ?? this.country,
+      educationalCenter: educationalCenter ?? this.educationalCenter,
+      gender: gender ?? this.gender,
+      userType: userType ?? this.userType,
+      userId: userId ?? this.userId,
+      user: user ?? this.user,
+    );
   }
 
   int? get age {
@@ -95,8 +128,12 @@ class Student {
         return Icons.male;
       case 'female':
         return Icons.female;
-      default:
+      case 'other':
         return Icons.transgender;
+      case 'prefer_not_to_say':
+        return Icons.visibility_off_outlined;
+      default:
+        return Icons.help_outline;
     }
   }
 
@@ -106,8 +143,27 @@ class Student {
         return Colors.blue;
       case 'female':
         return Colors.pink;
-      default:
+      case 'other':
         return Colors.purple;
+      case 'prefer_not_to_say':
+        return Colors.grey;
+      default:
+        return Colors.grey;
     }
+  }
+
+  int? get joinedYear {
+    if (user?.createdAt != null) {
+      try {
+        if (user!.createdAt is String) {
+          final date = DateTime.parse(user!.createdAt!);
+          return date.year;
+        }
+      } catch (e) {
+        print('Error parsing joined year: $e');
+        return null;
+      }
+    }
+    return null;
   }
 }

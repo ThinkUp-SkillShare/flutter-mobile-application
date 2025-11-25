@@ -8,6 +8,7 @@ class ApiConstants {
   static const String testConnectionEndpoint = '$baseUrl/Auth/test-connection';
 
   static String get studentBase => '$baseUrl/student';
+  static String userBase = '$baseUrl/users';
   static String studentByUserId(int userId) => '$studentBase/user/$userId';
   static String studentById(int id) => '$studentBase/$id';
 

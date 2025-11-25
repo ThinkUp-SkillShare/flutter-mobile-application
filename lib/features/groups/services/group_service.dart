@@ -43,6 +43,14 @@ class GroupService {
       if (response.statusCode == 200) {
         final data = List<Map<String, dynamic>>.from(json.decode(response.body));
         print('✅ Loaded ${data.length} user groups');
+
+        if (data.isNotEmpty) {
+          print('🔍 DEBUG - First group structure:');
+          print('   Keys: ${data[0].keys}');
+          print('   coverImage: ${data[0]['coverImage']}');
+          print('   cover_image: ${data[0]['cover_image']}');
+        }
+
         return data;
       } else {
         print('❌ Failed to load user groups: ${response.statusCode}');
@@ -100,17 +108,27 @@ class GroupService {
 
       if (response.statusCode == 200) {
         final data = List<Map<String, dynamic>>.from(json.decode(response.body));
-        print('✅ Loaded ${data.length} groups where user is NOT member');
+        print('✅ Loaded ${data.length} featured groups');
 
-        data.sort((a, b) => (b['memberCount'] ?? 0).compareTo(a['memberCount'] ?? 0));
-
-        final featured = data.take(10).toList();
-        print('🎯 Featured groups (top ${featured.length} by members):');
-        for (var group in featured) {
-          print('   - ${group['name']}: ${group['memberCount']} members, Subject: ${group['subjectName']}');
+        // Asegurar que memberCount sea int
+        for (var group in data) {
+          if (group['memberCount'] is String) {
+            group['memberCount'] = int.tryParse(group['memberCount']) ?? 0;
+          }
+          // Si viene como double, convertirlo a int
+          if (group['memberCount'] is double) {
+            group['memberCount'] = (group['memberCount'] as double).toInt();
+          }
         }
 
-        return featured;
+        // DEBUG: Mostrar los grupos ordenados
+        print('🎯 Featured groups (sorted by member count):');
+        for (var i = 0; i < data.length; i++) {
+          final group = data[i];
+          print('   ${i + 1}. "${group['name']}" - ${group['memberCount']} members');
+        }
+
+        return data;
       } else {
         print('❌ Failed to load featured groups: ${response.statusCode}');
         print('Response body: ${response.body}');
