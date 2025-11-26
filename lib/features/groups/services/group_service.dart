@@ -63,35 +63,6 @@ class GroupService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getRecentGroups(int userId, String token) async {
-    try {
-      print('🔐 Getting recent groups for userId: $userId');
-
-      final response = await http.get(
-        Uri.parse('${ApiConstants.studyGroupBase}/recent?userId=$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      print('📡 Recent groups response: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = List<Map<String, dynamic>>.from(json.decode(response.body));
-        print('✅ Loaded ${data.length} recent groups');
-        return data;
-      } else {
-        print('❌ Failed to load recent groups: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        throw Exception('Failed to load recent groups: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('🚨 Error fetching recent groups: $e');
-      return [];
-    }
-  }
-
   static Future<List<Map<String, dynamic>>> getFeaturedGroups(int userId, String token) async {
     try {
       print('🔐 Getting featured groups for userId: $userId');

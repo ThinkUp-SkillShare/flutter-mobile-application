@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../auth/application/auth_service.dart';
-import '../../services/group_service.dart';
+import '../../../groups/services/group_service.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   const CreateGroupScreen({super.key});
