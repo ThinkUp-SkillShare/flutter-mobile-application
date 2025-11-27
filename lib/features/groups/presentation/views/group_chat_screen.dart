@@ -57,7 +57,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final token = await AuthService.getAuthToken();
       if (token == null) return;
 
-      final loadedMessages = await ChatService.getMessages(widget.groupId, token);
+      final loadedMessages = await ChatService.getMessages(
+        widget.groupId,
+        token,
+      );
       setState(() => messages = loadedMessages);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,7 +76,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   }
 
   Future<void> _sendMessage() async {
-    if (_messageController.text.trim().isEmpty && editingMessage == null) return;
+    if (_messageController.text.trim().isEmpty && editingMessage == null)
+      return;
 
     final token = await AuthService.getAuthToken();
     if (token == null) return;
@@ -91,7 +95,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
         if (success) {
           setState(() {
-            final index = messages.indexWhere((m) => m.id == editingMessage!.id);
+            final index = messages.indexWhere(
+              (m) => m.id == editingMessage!.id,
+            );
             if (index != -1) {
               messages[index] = ChatMessage(
                 id: messages[index].id,
@@ -267,7 +273,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       }
 
       final tempDir = await getTemporaryDirectory();
-      _currentAudioPath = '${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      _currentAudioPath =
+          '${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
       await _audioRecorder.start(
         const RecordConfig(encoder: AudioEncoder.aacLc),
@@ -275,7 +282,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       );
 
       setState(() => isRecording = true);
-
     } catch (e) {
       print('Error starting recording: $e');
       if (mounted) {
@@ -305,7 +311,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final fileSize = await file.length();
 
       // TODO: Upload audio to your server/cloud storage
-      final fileUrl = 'https://example.com/audio/${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final fileUrl =
+          'https://example.com/audio/${DateTime.now().millisecondsSinceEpoch}.m4a';
 
       final message = await ChatService.sendMessage(
         groupId: widget.groupId,
@@ -314,7 +321,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         fileUrl: fileUrl,
         fileName: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
         fileSize: fileSize,
-        duration: 60, // TODO: Calculate actual duration
+        duration: 60,
+        // TODO: Calculate actual duration
         replyToMessageId: replyingTo?.id,
       );
 
@@ -346,7 +354,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFD32F2F)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFD32F2F),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -435,10 +445,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       border: Border.all(color: Colors.grey[300]!),
                     ),
                     child: Center(
-                      child: Text(
-                        emoji,
-                        style: const TextStyle(fontSize: 32),
-                      ),
+                      child: Text(emoji, style: const TextStyle(fontSize: 32)),
                     ),
                   ),
                 );
@@ -507,15 +514,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         children: [
           // Header sections with limited height
           if (replyingTo != null)
-            SizedBox(
-              height: 70,
-              child: _buildReplyingToBar(),
-            ),
+            SizedBox(height: 70, child: _buildReplyingToBar()),
           if (editingMessage != null)
-            SizedBox(
-              height: 60,
-              child: _buildEditingBar(),
-            ),
+            SizedBox(height: 60, child: _buildEditingBar()),
 
           // Main content area - usa Expanded
           Expanded(
@@ -524,35 +525,38 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 : messages.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                return ChatMessageBubble(
-                  message: message,
-                  onReply: () => setState(() => replyingTo = message),
-                  onReact: () => _showReactionPicker(message),
-                  onEdit: message.isSentByCurrentUser && message.messageType == 'text'
-                      ? () {
-                    setState(() {
-                      editingMessage = message;
-                      _messageController.text = message.content ?? '';
-                    });
-                  }
-                      : null,
-                  onDelete: message.isSentByCurrentUser
-                      ? () => _deleteMessage(message)
-                      : null,
-                  onImageTap: () {
-                    // TODO: Open image viewer
-                  },
-                  onAudioPlay: () {
-                    // TODO: Play audio
-                  },
-                );
-              },
-            ),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      return ChatMessageBubble(
+                        message: message,
+                        onReply: () => setState(() => replyingTo = message),
+                        onReact: () => _showReactionPicker(message),
+                        onEdit:
+                            message.isSentByCurrentUser &&
+                                message.messageType == 'text'
+                            ? () {
+                                setState(() {
+                                  editingMessage = message;
+                                  _messageController.text =
+                                      message.content ?? '';
+                                });
+                              }
+                            : null,
+                        onDelete: message.isSentByCurrentUser
+                            ? () => _deleteMessage(message)
+                            : null,
+                        onImageTap: () {
+                          // TODO: Open image viewer
+                        },
+                        onAudioPlay: () {
+                          // TODO: Play audio
+                        },
+                      );
+                    },
+                  ),
           ),
 
           _buildInputArea(),
@@ -566,9 +570,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF324779).withOpacity(0.1),
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[300]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
       ),
       child: Row(
         children: [
@@ -624,9 +626,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFFF6B35).withOpacity(0.1),
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[300]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
       ),
       child: Row(
         children: [
@@ -716,7 +716,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           children: [
             if (!isRecording) ...[
               IconButton(
-                icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF324779)),
+                icon: const Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: Color(0xFF324779),
+                ),
                 onPressed: () => _showAttachmentOptions(),
               ),
             ],
@@ -729,32 +732,36 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 ),
                 child: isRecording
                     ? Row(
-                  children: [
-                    const Icon(Icons.mic_rounded, color: Color(0xFFD32F2F), size: 24),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Recording...',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontFamily: 'Sarabun',
-                        ),
-                      ),
-                    ),
-                  ],
-                )
+                        children: [
+                          const Icon(
+                            Icons.mic_rounded,
+                            color: Color(0xFFD32F2F),
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Recording...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontFamily: 'Sarabun',
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
                     : TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: TextStyle(fontFamily: 'Sarabun'),
-                    border: InputBorder.none,
-                  ),
-                  style: const TextStyle(fontFamily: 'Sarabun'),
-                  maxLines: null,
-                  textCapitalization: TextCapitalization.sentences,
-                ),
+                        controller: _messageController,
+                        decoration: const InputDecoration(
+                          hintText: 'Type a message...',
+                          hintStyle: TextStyle(fontFamily: 'Sarabun'),
+                          border: InputBorder.none,
+                        ),
+                        style: const TextStyle(fontFamily: 'Sarabun'),
+                        maxLines: null,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
               ),
             ),
             const SizedBox(width: 8),
@@ -771,17 +778,20 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             else
               isSending
                   ? const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
                   : IconButton(
-                icon: const Icon(Icons.send_rounded, color: Color(0xFF324779)),
-                onPressed: _sendMessage,
-              ),
+                      icon: const Icon(
+                        Icons.send_rounded,
+                        color: Color(0xFF324779),
+                      ),
+                      onPressed: _sendMessage,
+                    ),
           ],
         ),
       ),
@@ -820,9 +830,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   color: const Color(0xFF0F9D58).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.image_rounded, color: Color(0xFF0F9D58)),
+                child: const Icon(
+                  Icons.image_rounded,
+                  color: Color(0xFF0F9D58),
+                ),
               ),
-              title: const Text('Photo', style: TextStyle(fontFamily: 'Sarabun')),
+              title: const Text(
+                'Photo',
+                style: TextStyle(fontFamily: 'Sarabun'),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _sendImage();
@@ -835,9 +851,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   color: const Color(0xFF324779).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.attach_file_rounded, color: Color(0xFF324779)),
+                child: const Icon(
+                  Icons.attach_file_rounded,
+                  color: Color(0xFF324779),
+                ),
               ),
-              title: const Text('File', style: TextStyle(fontFamily: 'Sarabun')),
+              title: const Text(
+                'File',
+                style: TextStyle(fontFamily: 'Sarabun'),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _sendFile();
@@ -850,13 +872,21 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   color: const Color(0xFF9B59B6).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF9B59B6)),
+                child: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: Color(0xFF9B59B6),
+                ),
               ),
-              title: const Text('Camera', style: TextStyle(fontFamily: 'Sarabun')),
+              title: const Text(
+                'Camera',
+                style: TextStyle(fontFamily: 'Sarabun'),
+              ),
               onTap: () async {
                 Navigator.pop(context);
                 final ImagePicker picker = ImagePicker();
-                final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.camera,
+                );
                 if (image != null) {
                   // TODO: Handle camera image
                 }

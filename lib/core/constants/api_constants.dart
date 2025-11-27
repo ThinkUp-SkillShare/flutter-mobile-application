@@ -1,11 +1,18 @@
 class ApiConstants {
-  // static const String baseUrl = 'http://192.168.0.206:5118/api';
-  static const String baseUrl = 'http://10.0.2.2:5118/api';
+  static const bool isEmulator = false;
 
-  static const String loginEndpoint = '$baseUrl/Auth/login';
-  static const String registerEndpoint = '$baseUrl/Auth/register';
-  static const String validateTokenEndpoint = '$baseUrl/Auth/validate-token';
-  static const String testConnectionEndpoint = '$baseUrl/Auth/test-connection';
+  static String get baseUrl {
+    if (isEmulator) {
+      return 'http://10.0.2.2:5118/api';
+    } else {
+      return 'http://192.168.0.206:5118/api';
+    }
+  }
+
+  static final String loginEndpoint = '$baseUrl/Auth/login';
+  static final String registerEndpoint = '$baseUrl/Auth/register';
+  static final String validateTokenEndpoint = '$baseUrl/Auth/validate-token';
+  static final String testConnectionEndpoint = '$baseUrl/Auth/test-connection';
 
   static String get studentBase => '$baseUrl/student';
   static String userBase = '$baseUrl/users';
