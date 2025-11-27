@@ -33,4 +33,12 @@ class ApiConstants {
       '$studyGroupBase/$groupId/chat/messages/$messageId/reactions/$reactionId';
   static String markMessageAsRead(int groupId, int messageId) =>
       '$studyGroupBase/$groupId/chat/messages/$messageId/read';
+
+  static String groupPermissions(int groupId) => '$studyGroupBase/$groupId/permissions';
+  static String groupStatistics(int groupId) => '$studyGroupBase/$groupId/statistics';
+  static String promoteToAdmin(int groupId, int memberId) => '$studyGroupBase/$groupId/members/$memberId/promote';
+  static String demoteToMember(int groupId, int memberId) => '$studyGroupBase/$groupId/members/$memberId/demote';
+  static String removeMember(int groupId, int memberId) => '$studyGroupBase/$groupId/members/$memberId';
+  static String bulkRemoveMembers(int groupId) => '$studyGroupBase/$groupId/members/bulk-remove';
+  static String transferOwnership(int groupId) => '$studyGroupBase/$groupId/transfer-ownership';
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../auth/application/auth_service.dart';
 import '../../services/group_service.dart';
 import 'group_chat_screen.dart';
+import 'group_settings_screen.dart';
 
 class GroupDetailScreen extends StatefulWidget {
   final int groupId;
@@ -12,7 +13,8 @@ class GroupDetailScreen extends StatefulWidget {
   State<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
-class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTickerProviderStateMixin {
+class _GroupDetailScreenState extends State<GroupDetailScreen>
+    with SingleTickerProviderStateMixin {
   Map<String, dynamic>? groupDetails;
   List<Map<String, dynamic>> members = [];
   bool isLoading = true;
@@ -20,12 +22,25 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
   String? userRole;
   late TabController _tabController;
   int _currentTabIndex = 0;
+  int? userId; // Cambiado de String? a int?
 
   final List<Map<String, dynamic>> _tabs = [
-    {'icon': Icons.chat_bubble_rounded, 'label': 'Chat', 'color': Color(0xFF324779)},
-    {'icon': Icons.folder_rounded, 'label': 'Files', 'color': Color(0xFF0F9D58)},
+    {
+      'icon': Icons.chat_bubble_rounded,
+      'label': 'Chat',
+      'color': Color(0xFF324779),
+    },
+    {
+      'icon': Icons.folder_rounded,
+      'label': 'Files',
+      'color': Color(0xFF0F9D58),
+    },
     {'icon': Icons.quiz_rounded, 'label': 'Quiz', 'color': Color(0xFFFF6B35)},
-    {'icon': Icons.video_call_rounded, 'label': 'Calls', 'color': Color(0xFF9B59B6)},
+    {
+      'icon': Icons.video_call_rounded,
+      'label': 'Calls',
+      'color': Color(0xFF9B59B6),
+    },
   ];
 
   @override
@@ -48,15 +63,24 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     setState(() => isLoading = true);
 
     try {
-      final userId = await AuthService.getUserId();
+      userId = await AuthService.getUserId();
       final token = await AuthService.getAuthToken();
 
       if (userId == null || token == null) return;
 
-      groupDetails = await GroupService.getGroupById(widget.groupId, userId, token);
+      groupDetails = await GroupService.getGroupById(
+        widget.groupId,
+        userId!,
+        token,
+      );
       members = await GroupService.getGroupMembers(widget.groupId, token);
 
-      userRole = groupDetails?['userRole'];
+      final roleValue = groupDetails?['userRole'];
+      if (roleValue != null) {
+        userRole = roleValue.toString();
+      } else {
+        userRole = null;
+      }
       isMember = userRole != null;
     } catch (e) {
       print('Error loading group details: $e');
@@ -75,13 +99,19 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully joined the group!'), backgroundColor: Color(0xFF0F9D58)),
+          const SnackBar(
+            content: Text('Successfully joined the group!'),
+            backgroundColor: Color(0xFF0F9D58),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error joining group: $e'), backgroundColor: Color(0xFFD32F2F)),
+          SnackBar(
+            content: Text('Error joining group: $e'),
+            backgroundColor: Color(0xFFD32F2F),
+          ),
         );
       }
     }
@@ -100,7 +130,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFD32F2F)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFD32F2F),
+            ),
             child: const Text('Leave'),
           ),
         ],
@@ -124,7 +156,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error leaving group: $e'), backgroundColor: Color(0xFFD32F2F)),
+          SnackBar(
+            content: Text('Error leaving group: $e'),
+            backgroundColor: Color(0xFFD32F2F),
+          ),
         );
       }
     }
@@ -172,10 +207,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Sarabun',
                   ),
-                  tabs: _tabs.map((tab) => Tab(
-                    icon: Icon(tab['icon'] as IconData, size: 24),
-                    text: tab['label'] as String,
-                  )).toList(),
+                  tabs: _tabs
+                      .map(
+                        (tab) => Tab(
+                      icon: Icon(tab['icon'] as IconData, size: 24),
+                      text: tab['label'] as String,
+                    ),
+                  )
+                      .toList(),
                 ),
               ),
             ),
@@ -206,11 +245,25 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
-        if (isMember && userRole == 'admin')
+        if (isMember &&
+            (userRole == 'admin' ||
+                (groupDetails!['createdBy'] != null &&
+                    groupDetails!['createdBy'].toString() == userId.toString())))
           IconButton(
             icon: const Icon(Icons.settings_rounded, color: Colors.white),
-            onPressed: () {
-              // TODO: Navigate to group settings
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupSettingsScreen(
+                    groupId: widget.groupId,
+                    groupDetails: groupDetails!,
+                  ),
+                ),
+              );
+              if (result == true) {
+                _loadGroupDetails();
+              }
             },
           ),
         IconButton(
@@ -223,7 +276,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           fit: StackFit.expand,
           children: [
             Image.network(
-              groupDetails!['coverImage'] ?? 'https://via.placeholder.com/400x280',
+              groupDetails!['coverImage'] ??
+                  'https://via.placeholder.com/400x280',
               fit: BoxFit.cover,
             ),
             Container(
@@ -231,10 +285,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                 ),
               ),
             ),
@@ -246,7 +297,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFBBE1FA),
                       borderRadius: BorderRadius.circular(20),
@@ -306,11 +360,26 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
         children: [
           Row(
             children: [
-              _buildStatCard(Icons.people_rounded, '${groupDetails!['memberCount']}', 'Members', const Color(0xFF324779)),
+              _buildStatCard(
+                Icons.people_rounded,
+                '${groupDetails!['memberCount'] ?? 0}',
+                'Members',
+                const Color(0xFF324779),
+              ),
               const SizedBox(width: 12),
-              _buildStatCard(Icons.schedule_rounded, _getTimeAgo(groupDetails!['createdAt']), 'Created', const Color(0xFF0F9D58)),
+              _buildStatCard(
+                Icons.schedule_rounded,
+                _getTimeAgo(groupDetails!['createdAt'] ?? ''),
+                'Created',
+                const Color(0xFF0F9D58),
+              ),
               const SizedBox(width: 12),
-              _buildStatCard(Icons.person_rounded, userRole == 'admin' ? 'Admin' : 'Member', 'Role', const Color(0xFFFF6B35)),
+              _buildStatCard(
+                Icons.person_rounded,
+                userRole == 'admin' ? 'Admin' : 'Member',
+                'Role',
+                const Color(0xFFFF6B35),
+              ),
             ],
           ),
 
@@ -368,7 +437,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                     label: const Text('View Members'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF324779),
-                      side: const BorderSide(color: Color(0xFF324779), width: 1.5),
+                      side: const BorderSide(
+                        color: Color(0xFF324779),
+                        width: 1.5,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -400,7 +472,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     );
   }
 
-  Widget _buildStatCard(IconData icon, String value, String label, Color color) {
+  Widget _buildStatCard(
+      IconData icon,
+      String value,
+      String label,
+      Color color,
+      ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -617,7 +694,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF324779).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
@@ -652,7 +732,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                       color: const Color(0xFFFAFAFA),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isAdmin ? const Color(0xFF324779).withOpacity(0.3) : Colors.transparent,
+                        color: isAdmin
+                            ? const Color(0xFF324779).withOpacity(0.3)
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -699,7 +781,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         ),
                         if (isAdmin)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF324779),
                               borderRadius: BorderRadius.circular(12),
@@ -753,8 +838,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.share_rounded, color: Color(0xFF324779)),
-              title: const Text('Share Group', style: TextStyle(fontFamily: 'Sarabun')),
+              leading: const Icon(
+                Icons.share_rounded,
+                color: Color(0xFF324779),
+              ),
+              title: const Text(
+                'Share Group',
+                style: TextStyle(fontFamily: 'Sarabun'),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Implement share
@@ -762,7 +853,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             ),
             ListTile(
               leading: const Icon(Icons.info_rounded, color: Color(0xFF324779)),
-              title: const Text('Group Info', style: TextStyle(fontFamily: 'Sarabun')),
+              title: const Text(
+                'Group Info',
+                style: TextStyle(fontFamily: 'Sarabun'),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Show group info
@@ -770,8 +864,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             ),
             if (isMember)
               ListTile(
-                leading: const Icon(Icons.notifications_rounded, color: Color(0xFF324779)),
-                title: const Text('Notifications', style: TextStyle(fontFamily: 'Sarabun')),
+                leading: const Icon(
+                  Icons.notifications_rounded,
+                  color: Color(0xFF324779),
+                ),
+                title: const Text(
+                  'Notifications',
+                  style: TextStyle(fontFamily: 'Sarabun'),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   // TODO: Notification settings
@@ -785,22 +885,28 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
   }
 
   String _getTimeAgo(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    final now = DateTime.now();
-    final difference = now.difference(date);
+    if (dateStr.isEmpty) return 'Unknown';
 
-    if (difference.inDays > 365) {
-      return '${(difference.inDays / 365).floor()}y ago';
-    } else if (difference.inDays > 30) {
-      return '${(difference.inDays / 30).floor()}mo ago';
-    } else if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 365) {
+        return '${(difference.inDays / 365).floor()}y ago';
+      } else if (difference.inDays > 30) {
+        return '${(difference.inDays / 30).floor()}mo ago';
+      } else if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Unknown';
     }
   }
 }
@@ -812,15 +918,17 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   double get minExtent => tabBar.preferredSize.height;
+
   @override
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: Colors.white,
-      child: tabBar,
-    );
+  Widget build(
+      BuildContext context,
+      double shrinkOffset,
+      bool overlapsContent,
+      ) {
+    return Container(color: Colors.white, child: tabBar);
   }
 
   @override
