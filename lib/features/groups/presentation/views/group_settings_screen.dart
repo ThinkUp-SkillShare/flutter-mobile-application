@@ -30,31 +30,97 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+
     setState(() => isLoading = true);
 
     try {
-      final token = await AuthService.getAuthToken();
-      if (token == null) return;
+      final token = await AuthService.getValidToken();
+      print('🔑 Token obtained: ${token != null ? "VALID" : "NULL"}');
 
-      final perms = await GroupManagementService.getUserPermissions(widget.groupId, token);
-      final stats = await GroupManagementService.getGroupStatistics(widget.groupId, token);
+      if (token == null) {
+        if (mounted) {
+          _showSnackBar('Please login again', isError: true);
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
 
-      setState(() {
-        permissions = perms;
-        statistics = stats;
-      });
-    } catch (e) {
-      print('Error loading data: $e');
+      print('🔐 Loading permissions for group ${widget.groupId}');
+
+      final perms = await GroupManagementService.getUserPermissions(
+        widget.groupId,
+        token,
+      );
+      final stats = await GroupManagementService.getGroupStatistics(
+        widget.groupId,
+        token,
+      );
+
+      print('📋 Raw permissions response: $perms');
+      print('📊 Raw statistics response: $stats');
+
+      // Debug detallado de cada permiso
+      if (perms != null) {
+        perms.forEach((key, value) {
+          print('➡ Permission $key: $value');
+        });
+      } else {
+        print('⚠ Permissions are null, using defaults');
+      }
+
+      if (stats != null) {
+        stats.forEach((key, value) {
+          print('📌 Statistic $key: $value');
+        });
+      } else {
+        print('⚠ Statistics are null');
+      }
+
+      if (mounted) {
+        setState(() {
+          permissions = perms ?? _getDefaultPermissions();
+          statistics = stats;
+        });
+      }
+    } catch (e, stack) {
+      print('❌ Error loading settings data: $e');
+      print(stack);
+
+      if (mounted) {
+        _showSnackBar('Failed to load settings', isError: true);
+        setState(() {
+          permissions = _getDefaultPermissions();
+        });
+      }
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  Map<String, dynamic> _getDefaultPermissions() {
+    final defaultPerms = {
+      'canEditGroup': true,
+      'canDeleteGroup': true,
+      'canManageMembers': true,
+      'canPromoteMembers': true,
+      'canRemoveMembers': true,
+      'canTransferOwnership': true,
+      'isOwner': true,
+      'isAdmin': true,
+      'isMember': true,
+    };
+    print('🔁 Using default permissions: $defaultPerms');
+    return defaultPerms;
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF0F9D58),
+        backgroundColor: isError
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF0F9D58),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -77,7 +143,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFD32F2F)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFD32F2F),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -90,7 +158,11 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
       final token = await AuthService.getAuthToken();
       if (token == null) return;
 
-      final success = await GroupManagementService.deleteGroup(widget.groupId, token);
+      final success = await GroupManagementService.deleteGroup(
+        widget.groupId,
+        token,
+      );
+      print('🗑 Delete group response: $success');
 
       if (success) {
         if (mounted) {
@@ -123,6 +195,11 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     final canManageMembers = permissions?['canManageMembers'] ?? false;
     final isOwner = permissions?['isOwner'] ?? false;
 
+    // Debug de UI permissions
+    print(
+      '⚙️ UI Permissions - canEdit: $canEdit, canDelete: $canDelete, canManageMembers: $canManageMembers, isOwner: $isOwner',
+    );
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
@@ -131,7 +208,10 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF2C3E50)),
+          icon: const Icon(
+            Icons.arrow_back_ios_rounded,
+            color: Color(0xFF2C3E50),
+          ),
         ),
         title: const Text(
           'Group Settings',
@@ -146,14 +226,10 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // Statistics Card
           if (statistics != null) _buildStatisticsCard(),
           const SizedBox(height: 20),
-
-          // Management Section
           _buildSectionTitle('Management'),
           const SizedBox(height: 12),
-
           if (canEdit)
             _buildSettingTile(
               icon: Icons.edit_rounded,
@@ -170,12 +246,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                     ),
                   ),
                 );
-                if (result == true && mounted) {
-                  Navigator.pop(context, true);
-                }
+                if (result == true && mounted) Navigator.pop(context, true);
               },
             ),
-
           if (canManageMembers)
             _buildSettingTile(
               icon: Icons.people_rounded,
@@ -195,10 +268,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                 );
               },
             ),
-
           const SizedBox(height: 20),
-
-          // Danger Zone
           if (canDelete) ...[
             _buildSectionTitle('Danger Zone'),
             const SizedBox(height: 12),
@@ -210,10 +280,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               onTap: _deleteGroup,
             ),
           ],
-
           const SizedBox(height: 20),
-
-          // Role Badge
           _buildRoleBadge(isOwner),
         ],
       ),
@@ -286,7 +353,12 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+  Widget _buildStatItem(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -309,10 +381,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
             ),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF777777),
-              ),
+              style: const TextStyle(fontSize: 11, color: Color(0xFF777777)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -373,10 +442,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF777777),
-          ),
+          style: const TextStyle(fontSize: 13, color: Color(0xFF777777)),
         ),
         trailing: const Icon(
           Icons.arrow_forward_ios_rounded,
@@ -392,16 +458,22 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isOwner ? const Color(0xFFFFD700).withOpacity(0.1) : const Color(0xFF324779).withOpacity(0.1),
+        color: isOwner
+            ? const Color(0xFFFFD700).withOpacity(0.1)
+            : const Color(0xFF324779).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isOwner ? const Color(0xFFFFD700).withOpacity(0.3) : const Color(0xFF324779).withOpacity(0.3),
+          color: isOwner
+              ? const Color(0xFFFFD700).withOpacity(0.3)
+              : const Color(0xFF324779).withOpacity(0.3),
         ),
       ),
       child: Row(
         children: [
           Icon(
-            isOwner ? Icons.workspace_premium_rounded : Icons.admin_panel_settings_rounded,
+            isOwner
+                ? Icons.workspace_premium_rounded
+                : Icons.admin_panel_settings_rounded,
             color: isOwner ? const Color(0xFFFFD700) : const Color(0xFF324779),
             size: 24,
           ),
@@ -415,7 +487,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: isOwner ? const Color(0xFFFFD700) : const Color(0xFF324779),
+                    color: isOwner
+                        ? const Color(0xFFFFD700)
+                        : const Color(0xFF324779),
                   ),
                 ),
                 Text(

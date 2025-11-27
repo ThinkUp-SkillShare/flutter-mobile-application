@@ -7,7 +7,7 @@ class GroupManagementService {
   static Future<Map<String, dynamic>?> getUserPermissions(int groupId, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConstants.studyGroupBase}/$groupId/permissions'),
+        Uri.parse(ApiConstants.groupPermissions(groupId)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -16,8 +16,10 @@ class GroupManagementService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        print('Error getting permissions: ${response.statusCode}');
+        return null;
       }
-      return null;
     } catch (e) {
       print('Error getting permissions: $e');
       return null;

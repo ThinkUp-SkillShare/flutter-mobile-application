@@ -501,18 +501,23 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: _loadMessages,
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-            onPressed: () {
-              // TODO: Show chat options
-            },
-          ),
         ],
       ),
       body: Column(
         children: [
-          if (replyingTo != null) _buildReplyingToBar(),
-          if (editingMessage != null) _buildEditingBar(),
+          // Header sections with limited height
+          if (replyingTo != null)
+            SizedBox(
+              height: 70,
+              child: _buildReplyingToBar(),
+            ),
+          if (editingMessage != null)
+            SizedBox(
+              height: 60,
+              child: _buildEditingBar(),
+            ),
+
+          // Main content area - usa Expanded
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -549,6 +554,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               },
             ),
           ),
+
           _buildInputArea(),
         ],
       ),

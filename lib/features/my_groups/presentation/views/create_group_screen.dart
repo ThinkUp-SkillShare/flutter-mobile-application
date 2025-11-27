@@ -49,16 +49,32 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   }
 
   Future<void> _createGroup() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      print('❌ Form validation failed');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final token = await AuthService.getAuthToken();
       if (token == null) {
-        _showSnackBar('Authentication error', isError: true);
+        print('❌ No auth token available');
+        _showSnackBar('Authentication error: No token', isError: true);
         return;
       }
+
+      // DEBUG: Obtener y mostrar el User ID del token
+      final userId = await AuthService.getCurrentUserId();
+      print('🔍 User ID from token: $userId');
+
+      print('🎯 Creating group with final data:');
+      print('   Name: ${_nameController.text}');
+      print('   Description: ${_descriptionController.text}');
+      print('   Subject ID: $_selectedSubjectId');
+      print('   Cover Image: ${_imageUrlController.text}');
+      print('   Token available: ${token.isNotEmpty}');
+      print('   User ID from token: $userId');
 
       final result = await GroupService.createGroup(
         name: _nameController.text.trim(),
@@ -71,12 +87,15 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       );
 
       if (result != null) {
+        print('✅ Group created successfully: $result');
         _showSnackBar('Group created successfully!');
         Navigator.pop(context, true);
       } else {
-        _showSnackBar('Failed to create group', isError: true);
+        print('❌ Group creation returned null');
+        _showSnackBar('Failed to create group - check console for details', isError: true);
       }
     } catch (e) {
+      print('🚨 Exception in _createGroup: $e');
       _showSnackBar('Error: $e', isError: true);
     } finally {
       setState(() => _isLoading = false);

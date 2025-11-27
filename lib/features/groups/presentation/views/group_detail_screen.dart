@@ -210,10 +210,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                   tabs: _tabs
                       .map(
                         (tab) => Tab(
-                      icon: Icon(tab['icon'] as IconData, size: 24),
-                      text: tab['label'] as String,
-                    ),
-                  )
+                          icon: Icon(tab['icon'] as IconData, size: 24),
+                          text: tab['label'] as String,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -248,7 +248,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
         if (isMember &&
             (userRole == 'admin' ||
                 (groupDetails!['createdBy'] != null &&
-                    groupDetails!['createdBy'].toString() == userId.toString())))
+                    groupDetails!['createdBy'] == userId)))
           IconButton(
             icon: const Icon(Icons.settings_rounded, color: Colors.white),
             onPressed: () async {
@@ -473,11 +473,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   }
 
   Widget _buildStatCard(
-      IconData icon,
-      String value,
-      String label,
-      Color color,
-      ) {
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -924,10 +924,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context,
-      double shrinkOffset,
-      bool overlapsContent,
-      ) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(color: Colors.white, child: tabBar);
   }
 

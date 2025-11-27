@@ -4,8 +4,11 @@ import 'dart:convert';
 import '../../../core/constants/api_constants.dart';
 
 class GroupService {
-
-  static Future<Map<String, dynamic>> getGroupById(int groupId, int userId, String token) async {
+  static Future<Map<String, dynamic>?> getGroupById(
+    int groupId,
+    int userId,
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse(ApiConstants.studyGroupById(groupId, userId: userId)),
@@ -17,16 +20,23 @@ class GroupService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
+      } else if (response.statusCode == 404) {
+        throw Exception('Group not found');
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed');
       } else {
-        throw Exception('Failed to load group details: ${response.statusCode}');
+        throw Exception('Failed to load group: ${response.statusCode}');
       }
     } catch (e) {
       print('Error in getGroupById: $e');
-      throw Exception('Error loading group details: $e');
+      rethrow;
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getUserGroups(int userId, String token) async {
+  static Future<List<Map<String, dynamic>>> getUserGroups(
+    int userId,
+    String token,
+  ) async {
     try {
       print('🔐 Getting user groups for userId: $userId');
 
@@ -41,7 +51,9 @@ class GroupService {
       print('📡 User groups response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = List<Map<String, dynamic>>.from(json.decode(response.body));
+        final data = List<Map<String, dynamic>>.from(
+          json.decode(response.body),
+        );
         print('✅ Loaded ${data.length} user groups');
 
         if (data.isNotEmpty) {
@@ -63,7 +75,10 @@ class GroupService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getFeaturedGroups(int userId, String token) async {
+  static Future<List<Map<String, dynamic>>> getFeaturedGroups(
+    int userId,
+    String token,
+  ) async {
     try {
       print('🔐 Getting featured groups for userId: $userId');
 
@@ -78,7 +93,9 @@ class GroupService {
       print('📡 Featured groups response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = List<Map<String, dynamic>>.from(json.decode(response.body));
+        final data = List<Map<String, dynamic>>.from(
+          json.decode(response.body),
+        );
         print('✅ Loaded ${data.length} featured groups');
 
         // Asegurar que memberCount sea int
@@ -96,14 +113,18 @@ class GroupService {
         print('🎯 Featured groups (sorted by member count):');
         for (var i = 0; i < data.length; i++) {
           final group = data[i];
-          print('   ${i + 1}. "${group['name']}" - ${group['memberCount']} members');
+          print(
+            '   ${i + 1}. "${group['name']}" - ${group['memberCount']} members',
+          );
         }
 
         return data;
       } else {
         print('❌ Failed to load featured groups: ${response.statusCode}');
         print('Response body: ${response.body}');
-        throw Exception('Failed to load featured groups: ${response.statusCode}');
+        throw Exception(
+          'Failed to load featured groups: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('🚨 Error fetching featured groups: $e');
@@ -127,7 +148,9 @@ class GroupService {
       print('📡 All groups response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = List<Map<String, dynamic>>.from(json.decode(response.body));
+        final data = List<Map<String, dynamic>>.from(
+          json.decode(response.body),
+        );
         print('✅ Loaded ${data.length} TOTAL groups');
 
         for (var i = 0; i < data.length && i < 5; i++) {
@@ -150,7 +173,9 @@ class GroupService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getPopularSubjects(String token) async {
+  static Future<List<Map<String, dynamic>>> getPopularSubjects(
+    String token,
+  ) async {
     final response = await http.get(
       Uri.parse('${ApiConstants.subjectBase}/popular'),
       headers: {
@@ -180,7 +205,9 @@ class GroupService {
       print('📡 Subjects response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = List<Map<String, dynamic>>.from(json.decode(response.body));
+        final data = List<Map<String, dynamic>>.from(
+          json.decode(response.body),
+        );
         print('✅ Loaded ${data.length} subjects');
 
         print('🔍 DEBUG: All subjects:');
@@ -200,7 +227,11 @@ class GroupService {
     }
   }
 
-  static Future<Map<String, dynamic>?> getGroupDetails(int groupId, int userId, String token) async {
+  static Future<Map<String, dynamic>?> getGroupDetails(
+    int groupId,
+    int userId,
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse(ApiConstants.studyGroupById(groupId, userId: userId)),
@@ -229,27 +260,64 @@ class GroupService {
     int? subjectId,
   }) async {
     try {
+      print('🚀 Starting group creation...');
+      print('📦 Group data:');
+      print('   - Name: $name');
+      print('   - Description: $description');
+      print('   - CoverImage: $coverImage');
+      print('   - SubjectId: $subjectId');
+      print('   - Token length: ${token.length}');
+
+      // Preparar el cuerpo
+      final body = <String, dynamic>{
+        'name': name,
+        'description': description ?? '', // Asegurar que no sea null
+      };
+
+      // Solo agregar coverImage si no es null y no está vacío
+      if (coverImage != null && coverImage.isNotEmpty) {
+        body['coverImage'] = coverImage;
+      }
+
+      // Solo agregar subjectId si no es null
+      if (subjectId != null) {
+        body['subjectId'] = subjectId;
+      }
+
+      print('📤 Request body: $body');
+      print('🌐 URL: ${ApiConstants.studyGroupBase}');
+
       final response = await http.post(
         Uri.parse(ApiConstants.studyGroupBase),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: json.encode({
-          'name': name,
-          'description': description,
-          'coverImage': coverImage,
-          'subjectId': subjectId,
-        }),
+        body: json.encode(body),
       );
 
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+      print('📡 Response headers: ${response.headers}');
+
       if (response.statusCode == 201) {
+        print('✅ Group created successfully!');
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
+        print('❌ Failed to create group: ${response.statusCode}');
+
+        try {
+          final errorBody = json.decode(response.body);
+          print('📝 Error details: $errorBody');
+        } catch (e) {
+          print('📝 Raw error response: ${response.body}');
+        }
+
         throw Exception('Failed to create group: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error creating group: $e');
+      print('🚨 Exception in createGroup: $e');
+      print('🚨 Exception type: ${e.runtimeType}');
       return null;
     }
   }
@@ -336,7 +404,10 @@ class GroupService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getGroupMembers(int groupId, String token) async {
+  static Future<List<Map<String, dynamic>>> getGroupMembers(
+    int groupId,
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse(ApiConstants.groupMembers(groupId)),
