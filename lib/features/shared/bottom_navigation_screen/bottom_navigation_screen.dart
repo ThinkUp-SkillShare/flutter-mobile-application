@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/features/files/presentation/files_screen.dart';
+import 'package:skill_share/features/files/presentation/views/files_screen.dart';
 import 'package:skill_share/features/my_groups/presentation/views/groups_screen.dart';
 import 'package:skill_share/features/home/presentation/views/home_screen.dart';
 import 'package:skill_share/features/profile/presentation/views/profile_screen.dart';

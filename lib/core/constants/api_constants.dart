@@ -48,4 +48,6 @@ class ApiConstants {
   static String removeMember(int groupId, int memberId) => '$studyGroupBase/$groupId/members/$memberId';
   static String bulkRemoveMembers(int groupId) => '$studyGroupBase/$groupId/members/bulk-remove';
   static String transferOwnership(int groupId) => '$studyGroupBase/$groupId/transfer-ownership';
+
+  static final String documentBase = '$baseUrl/document';
 }
