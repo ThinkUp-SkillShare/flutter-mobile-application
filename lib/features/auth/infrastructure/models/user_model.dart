@@ -1,5 +1,8 @@
 import '../../domain/entities/user_entity.dart';
 
+/// Data model representing a user, extending [UserEntity].
+///
+/// This class is mainly used for data transfer and JSON serialization.
 class UserModel extends UserEntity {
   UserModel({
     super.userId,
@@ -9,6 +12,7 @@ class UserModel extends UserEntity {
     super.createdAt,
   });
 
+  /// Creates a [UserModel] instance from a JSON map.
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       userId: json['userId'],
@@ -19,6 +23,7 @@ class UserModel extends UserEntity {
     );
   }
 
+  /// Converts this model into a JSON map.
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
@@ -29,6 +34,7 @@ class UserModel extends UserEntity {
     };
   }
 
+  /// Converts a [UserEntity] into a [UserModel].
   factory UserModel.fromEntity(UserEntity entity) {
     return UserModel(
       userId: entity.userId,
@@ -39,6 +45,7 @@ class UserModel extends UserEntity {
     );
   }
 
+  /// Converts this [UserModel] back to a [UserEntity].
   UserEntity toEntity() {
     return UserEntity(
       userId: userId,
