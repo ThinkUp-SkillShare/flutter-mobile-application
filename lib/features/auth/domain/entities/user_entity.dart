@@ -1,3 +1,8 @@
+/// Represents a user entity with identification, authentication,
+/// and profile-related information.
+///
+/// This model supports flexible JSON parsing to handle both
+/// snake_case and camelCase API responses.
 class UserEntity {
   final int? userId;
   final String email;
@@ -13,6 +18,8 @@ class UserEntity {
     this.createdAt,
   });
 
+  /// Creates an instance from a JSON map.
+  /// Accepts both `snake_case` and `camelCase` conventions for flexibility.
   factory UserEntity.fromJson(Map<String, dynamic> json) {
     return UserEntity(
       userId: json['user_id'] ?? json['userId'],
@@ -23,6 +30,8 @@ class UserEntity {
     );
   }
 
+  /// Converts this entity into a JSON map.
+  /// Only non-null properties are included to keep payloads clean.
   Map<String, dynamic> toJson() {
     return {
       if (userId != null) 'userId': userId,
@@ -33,6 +42,8 @@ class UserEntity {
     };
   }
 
+  /// Returns a new [UserEntity] with selectively updated fields.
+  /// Useful for immutable state updates.
   UserEntity copyWith({
     int? userId,
     String? email,
@@ -49,6 +60,8 @@ class UserEntity {
     );
   }
 
+  /// Equality override to compare entity instances by value
+  /// rather than memory reference.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -61,6 +74,7 @@ class UserEntity {
         other.createdAt == createdAt;
   }
 
+  /// Generates a combined hash code for this entity.
   @override
   int get hashCode {
     return userId.hashCode ^
