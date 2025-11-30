@@ -64,8 +64,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         return;
       }
 
-      // DEBUG: Obtener y mostrar el User ID del token
-      final userId = await AuthService.getCurrentUserId();
+      final userId = await AuthService.getUserId();
       print('🔍 User ID from token: $userId');
 
       print('🎯 Creating group with final data:');

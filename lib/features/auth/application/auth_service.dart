@@ -1,8 +1,7 @@
 import 'dart:convert';
-
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../../core/constants/api_constants.dart';
 
 /// Service responsible for handling authentication-related local storage,
@@ -26,7 +25,7 @@ class AuthService {
   }
 
   /// Returns stored user ID or null if not found.
-  static Future<int?> getUserId() async {
+  static Future<int?> getStoredUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_userIdKey);
   }
@@ -44,16 +43,102 @@ class AuthService {
   }
 
   // ---------------------------------------------------------------------------
+  // USER ID EXTRACTION
+  // ---------------------------------------------------------------------------
+
+  static Future<int?> getUserId() async {
+    try {
+      // Primero intenta obtener el ID almacenado localmente
+      final storedUserId = await getStoredUserId();
+      if (storedUserId != null && storedUserId > 0) {
+        return storedUserId;
+      }
+
+      // Si no hay ID almacenado, intenta extraerlo del token
+      final token = await getAuthToken();
+      if (token == null) return null;
+
+      return _extractUserIdFromToken(token);
+    } catch (e) {
+      print('❌ Error getting user ID: $e');
+      return null;
+    }
+  }
+
+  /// Extrae el user ID del token JWT de forma robusta
+  static int? _extractUserIdFromToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        print('❌ Invalid JWT token format');
+        return null;
+      }
+
+      final payload = parts[1];
+
+      // Agregar padding si es necesario
+      String paddedPayload = payload;
+      final paddingNeeded = (4 - (payload.length % 4)) % 4;
+      if (paddingNeeded > 0) {
+        paddedPayload = payload + '=' * paddingNeeded;
+      }
+
+      // Decodificar Base64Url
+      final decodedBytes = base64Url.decode(paddedPayload);
+      final decodedString = utf8.decode(decodedBytes);
+      final payloadMap = json.decode(decodedString) as Map<String, dynamic>;
+
+      print('🔍 JWT Payload: $payloadMap');
+
+      // Buscar el user ID en diferentes claims posibles
+      final userId = payloadMap['nameid'] ??
+          payloadMap['uid'] ??
+          payloadMap['userId'] ??
+          payloadMap['sub'] ??
+          payloadMap['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+
+      if (userId == null) {
+        print('❌ User ID not found in JWT claims');
+        return null;
+      }
+
+      // Convertir a int
+      final userIdInt = userId is int ? userId : int.tryParse(userId.toString());
+
+      if (userIdInt != null) {
+        // Guardar el ID localmente para futuras consultas
+        _saveUserIdLocally(userIdInt);
+        return userIdInt;
+      }
+
+      print('❌ Could not parse user ID: $userId');
+      return null;
+
+    } catch (e) {
+      print('❌ Error extracting user ID from token: $e');
+      return null;
+    }
+  }
+
+  /// Guarda el user ID localmente
+  static Future<void> _saveUserIdLocally(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userIdKey, userId);
+  }
+
+  static Future<String?> getUserIdAsString() async {
+    final userId = await getUserId();
+    return userId?.toString();
+  }
+
+  // ---------------------------------------------------------------------------
   // AUTH & TOKEN VALIDATION
   // ---------------------------------------------------------------------------
 
   /// Returns `true` if the user is considered authenticated based on local data.
-  /// This does NOT verify the token integrity with the backend.
   static Future<bool> isAuthenticated() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final userId = prefs.getInt(_userIdKey);
-    final token = prefs.getString(_authTokenKey);
+    final userId = await getStoredUserId();
+    final token = await getAuthToken();
 
     if (userId == null || userId <= 0) return false;
     if (token == null || token.isEmpty) return false;
@@ -74,7 +159,6 @@ class AuthService {
 
       return response.statusCode == 200;
     } catch (e) {
-      // Important debug message in case token validation fails
       print('❌ Error validating token: $e');
       return false;
     }
@@ -88,55 +172,6 @@ class AuthService {
       return null;
     }
     return getAuthToken();
-  }
-
-  // ---------------------------------------------------------------------------
-  // USER IDENTIFICATION (JWT PARSING)
-  // ---------------------------------------------------------------------------
-
-  /// Extracts the user ID from the stored JWT token.
-  /// Supports multiple claim formats for compatibility.
-  static Future<int?> getCurrentUserId() async {
-    try {
-      final token = await getAuthToken();
-      if (token == null) return null;
-
-      final parts = token.split('.');
-      if (parts.length != 3) {
-        print('❌ Invalid JWT token format');
-        return null;
-      }
-
-      try {
-        final payload = parts[1];
-
-        // Normalize Base64URL before decoding
-        final normalizedPayload = base64Url.normalize(payload);
-        final decodedBytes = base64Url.decode(normalizedPayload);
-        final decodedString = utf8.decode(decodedBytes);
-
-        final payloadMap = json.decode(decodedString) as Map<String, dynamic>;
-
-        // Extract possible user ID claims
-        final userId = payloadMap['nameid'] ??
-            payloadMap['uid'] ??
-            payloadMap['userId'] ??
-            payloadMap['sub'];
-
-        if (userId != null) {
-          return int.tryParse(userId.toString());
-        }
-
-        print('❌ User ID not found in JWT claims');
-        return null;
-      } catch (e) {
-        print('❌ Error decoding JWT payload: $e');
-        return null;
-      }
-    } catch (e) {
-      print('❌ Error getting current user ID: $e');
-      return null;
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -163,10 +198,64 @@ class AuthService {
   /// Updates user profile data such as profile image.
   static Future<void> updateUserProfile(String? profileImagePath) async {
     final prefs = await SharedPreferences.getInstance();
-
     if (profileImagePath != null) {
       await prefs.setString('profileImage', profileImagePath);
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // DEBUG METHODS
+  // ---------------------------------------------------------------------------
+
+  static Future<void> debugToken() async {
+    try {
+      final token = await getAuthToken();
+      if (token == null) {
+        print('❌ No token found');
+        return;
+      }
+
+      print('🔍 Token: $token');
+
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        print('❌ Invalid token format');
+        return;
+      }
+
+      // Decodificar header
+      final header = _decodeJwtPart(parts[0]);
+      print('🔍 Header: $header');
+
+      // Decodificar payload
+      final payload = _decodeJwtPart(parts[1]);
+      print('🔍 Payload: $payload');
+
+      // Extraer user ID
+      final userId = await getUserId();
+      print('🔍 Extracted User ID: $userId');
+
+    } catch (e) {
+      print('❌ Error debugging token: $e');
+    }
+  }
+
+  /// Helper para decodificar partes JWT
+  static Map<String, dynamic> _decodeJwtPart(String part) {
+    try {
+      // Agregar padding si es necesario
+      String padded = part;
+      final paddingNeeded = (4 - (part.length % 4)) % 4;
+      if (paddingNeeded > 0) {
+        padded = part + '=' * paddingNeeded;
+      }
+
+      final decodedBytes = base64Url.decode(padded);
+      final decodedString = utf8.decode(decodedBytes);
+      return json.decode(decodedString);
+    } catch (e) {
+      print('❌ Error decoding JWT part: $e');
+      return {};
+    }
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:skill_share/features/groups/presentation/views/video_call_screen.dart';
 import '../../../auth/application/auth_service.dart';
 import '../../services/group_service.dart';
+import '../widgets/calls_section_widget.dart';
 import 'group_chat_screen.dart';
 import 'group_settings_screen.dart';
 
@@ -23,7 +24,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   String? userRole;
   late TabController _tabController;
   int _currentTabIndex = 0;
-  int? userId; // Cambiado de String? a int?
+  int? userId;
 
   final List<Map<String, dynamic>> _tabs = [
     {
@@ -211,10 +212,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                   tabs: _tabs
                       .map(
                         (tab) => Tab(
-                          icon: Icon(tab['icon'] as IconData, size: 24),
-                          text: tab['label'] as String,
-                        ),
-                      )
+                      icon: Icon(tab['icon'] as IconData, size: 24),
+                      text: tab['label'] as String,
+                    ),
+                  )
                       .toList(),
                 ),
               ),
@@ -226,7 +227,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                   _buildChatSection(),
                   _buildFilesSection(),
                   _buildQuizSection(),
-                  _buildCallsSection(),
+                  CallsSectionWidget(
+                    groupId: widget.groupId,
+                    groupName: groupDetails!['name'],
+                  ),
                 ],
               ),
             ),
@@ -235,6 +239,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       ),
     );
   }
+
 
   Widget _buildAppBar() {
     return SliverAppBar(
@@ -605,118 +610,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCallsSection() {
-    return Container(
-      color: Colors.white,
-      child: Column(
-        children: [
-          // Header de la sección de llamadas
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Group Video Calls',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF333333),
-                    fontFamily: 'Sarabun',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Start a video call with your group members for real-time collaboration',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF777777),
-                    fontFamily: 'Sarabun',
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => VideoCallScreen(
-                            groupId: widget.groupId,
-                            groupName: groupDetails!['name'],
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.video_call_rounded, size: 24),
-                    label: const Text(
-                      'Start Video Call',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF9B59B6),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Historial de llamadas (placeholder por ahora)
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF9B59B6).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.video_call_rounded,
-                      size: 64,
-                      color: Color(0xFF9B59B6),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'No call history yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF333333),
-                      fontFamily: 'Sarabun',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Start your first video call to collaborate with your group',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF777777),
-                      fontFamily: 'Sarabun',
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
