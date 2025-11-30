@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../../../core/constants/api_constants.dart';
-import '../domain/models/chat_message.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../domain/models/chat_message.dart';
 
 class ChatService {
   static Future<List<ChatMessage>> getMessages(

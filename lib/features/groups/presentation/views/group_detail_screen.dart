@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../auth/application/auth_service.dart';
 import '../../services/group_service.dart';
 import '../widgets/video_call/calls_section_widget.dart';
-import 'group_chat_screen.dart';
+import 'chat/group_chat_screen.dart';
 import 'group_settings_screen.dart';
 
 class GroupDetailScreen extends StatefulWidget {
@@ -211,10 +211,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                   tabs: _tabs
                       .map(
                         (tab) => Tab(
-                      icon: Icon(tab['icon'] as IconData, size: 24),
-                      text: tab['label'] as String,
-                    ),
-                  )
+                          icon: Icon(tab['icon'] as IconData, size: 24),
+                          text: tab['label'] as String,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -238,7 +238,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       ),
     );
   }
-
 
   Widget _buildAppBar() {
     return SliverAppBar(
@@ -518,6 +517,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     );
   }
 
+  // SECTIONS
+
   Widget _buildChatSection() {
     return GroupChatScreen(
       groupId: widget.groupId,
@@ -612,6 +613,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       ),
     );
   }
+
+  // OTHER FEATURES
 
   void _showMembers() {
     showModalBottomSheet(

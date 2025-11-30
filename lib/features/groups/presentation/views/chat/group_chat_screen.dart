@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
-import '../../../auth/application/auth_service.dart';
-import '../../services/chat_service.dart';
-import '../../domain/models/chat_message.dart';
-import '../widgets/chat_message_bubble.dart';
+import '../../../../auth/application/auth_service.dart';
+import '../../../services/chat/chat_service.dart';
+import '../../../domain/models/chat_message.dart';
+import '../../widgets/chat/chat_message_bubble.dart';
 import 'package:path_provider/path_provider.dart';
 
 class GroupChatScreen extends StatefulWidget {
