@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../services/call_service.dart';
-import '../../../auth/application/auth_service.dart';
-import '../views/video_call_screen.dart';
+import '../../../services/video_call/call_service.dart';
+import '../../../../auth/application/auth_service.dart';
+import '../../views/video_call/video_call_screen.dart';
 
 class CallsSectionWidget extends StatefulWidget {
   final int groupId;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/features/groups/presentation/views/video_call_screen.dart';
+import 'package:skill_share/features/groups/presentation/views/video_call/video_call_screen.dart';
 import '../../../auth/application/auth_service.dart';
 import '../../services/group_service.dart';
-import '../widgets/calls_section_widget.dart';
+import '../widgets/video_call/calls_section_widget.dart';
 import 'group_chat_screen.dart';
 import 'group_settings_screen.dart';
 
