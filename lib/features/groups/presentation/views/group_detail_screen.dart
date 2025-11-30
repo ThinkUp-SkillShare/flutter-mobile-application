@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/features/groups/presentation/views/video_call/video_call_screen.dart';
 import '../../../auth/application/auth_service.dart';
 import '../../services/group_service.dart';
 import '../widgets/video_call/calls_section_widget.dart';
