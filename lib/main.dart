@@ -14,6 +14,7 @@ import 'package:skill_share/i18n/app_localizations.dart';
 
 import 'features/auth/application/auth_service.dart';
 import 'features/auth/presentation/views/login_screen.dart';
+import 'features/groups/services/chat/audio_player_service.dart';
 import 'features/home/presentation/view_models/home_view_model.dart';
 import 'features/search/presentation/view_models/search_view_model.dart';
 import 'features/search/presentation/views/search_screen.dart';
@@ -22,7 +23,8 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
-  // Setup dependency injection
+  AudioPlayerService().init();
+
   setupDependencies();
 
   runApp(

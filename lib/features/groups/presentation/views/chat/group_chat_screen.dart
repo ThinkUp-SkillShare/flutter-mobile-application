@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:record/record.dart';
 import '../../../../auth/application/auth_service.dart';
+import '../../../services/chat/audio_player_service.dart';
 import '../../../services/chat/chat_service.dart';
 import '../../../domain/models/chat_message.dart';
+import '../../../services/chat/chat_websocket_service.dart';
 import '../../widgets/chat/chat_message_bubble.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -40,45 +43,193 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    _connectWebSocket();
+    _initializeAudioService();
+  }
+
+  void _initializeAudioService() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final audioService = AudioPlayerService();
+      audioService.init();
+    });
   }
 
   @override
   void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    _audioRecorder.dispose();
+    ChatWebSocketService.removeMessageListener(
+      widget.groupId,
+      _handleNewMessage,
+    );
     super.dispose();
   }
 
+  void _connectWebSocket() async {
+    print('🔗 Connecting WebSocket for group ${widget.groupId}');
+
+    final token = await AuthService.getAuthToken();
+    if (token == null) {
+      print('❌ No auth token available');
+      return;
+    }
+
+    try {
+      // Remover listeners antiguos primero
+      ChatWebSocketService.removeMessageListener(widget.groupId, _handleNewMessage);
+
+      // Conectar WebSocket
+      ChatWebSocketService.connect(widget.groupId, token);
+
+      // Agregar listeners
+      ChatWebSocketService.addMessageListener(widget.groupId, _handleNewMessage);
+
+      ChatWebSocketService.addConnectionListener(widget.groupId, () {
+        print('✅ WebSocket connected for group ${widget.groupId}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Connected to chat'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      });
+
+      ChatWebSocketService.addErrorListener(widget.groupId, (error) {
+        print('❌ WebSocket error: $error');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Connection error: ${error.toString()}'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+
+      ChatWebSocketService.addDisconnectionListener(widget.groupId, () {
+        print('🔌 WebSocket disconnected from group ${widget.groupId}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Connection lost. Reconnecting...'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+
+    } catch (e) {
+      print('❌ WebSocket Connection Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to connect: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleNewMessage(ChatMessage message) {
+    if (!mounted) return;
+
+    print('🆕 WebSocket - New message received: ${message.id}, Type: ${message.messageType}');
+
+    setState(() {
+      // Verificar si el mensaje ya existe
+      final existingIndex = messages.indexWhere((m) => m.id == message.id);
+
+      if (existingIndex == -1) {
+        // Mensaje nuevo
+        messages.add(message);
+        messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        print('✅ Added new message, total: ${messages.length}');
+      } else {
+        // Actualizar mensaje existente
+        messages[existingIndex] = message;
+        print('🔄 Updated existing message');
+      }
+    });
+
+    // Desplazar al final si el mensaje es nuevo
+    if (message.isSentByCurrentUser != true) {
+      _scrollToBottom();
+    }
+  }
+
+  void _showImagePreview(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            PhotoView(
+              imageProvider: NetworkImage(imageUrl),
+              backgroundDecoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+              ),
+              minScale: PhotoViewComputedScale.contained,
+              maxScale: PhotoViewComputedScale.covered * 2,
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _loadMessages() async {
+    print('🔄 LOAD MESSAGES - Starting...');
     setState(() => isLoading = true);
 
     try {
       final token = await AuthService.getAuthToken();
-      if (token == null) return;
+      if (token == null) {
+        print('❌ LOAD MESSAGES - No auth token');
+        return;
+      }
+
+      print('🔄 LOAD MESSAGES - GroupId: ${widget.groupId}');
 
       final loadedMessages = await ChatService.getMessages(
         widget.groupId,
         token,
       );
+
+      print('🔄 LOAD MESSAGES - Loaded ${loadedMessages.length} messages');
+
       setState(() => messages = loadedMessages);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          print('🔄 LOAD MESSAGES - Scrolled to bottom');
         }
       });
     } catch (e) {
-      print('Error loading messages: $e');
+      print('❌ LOAD MESSAGES - Error: $e');
     } finally {
       setState(() => isLoading = false);
+      print('🏁 LOAD MESSAGES - Finished, isLoading: false');
     }
   }
 
   Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty && editingMessage == null)
       return;
-
     final token = await AuthService.getAuthToken();
     if (token == null) return;
 
@@ -86,12 +237,16 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     try {
       if (editingMessage != null) {
+        print('✏️ MESSAGE - Editing message ID: ${editingMessage!.id}');
+
         final success = await ChatService.updateMessage(
           widget.groupId,
           editingMessage!.id,
           _messageController.text.trim(),
           token,
         );
+
+        print('✏️ MESSAGE - Edit result: $success');
 
         if (success) {
           setState(() {
@@ -124,6 +279,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             }
             editingMessage = null;
           });
+          print('✅ MESSAGE - Edit successful');
+        } else {
+          print('❌ MESSAGE - Edit failed');
         }
       } else {
         final message = await ChatService.sendMessage(
@@ -134,11 +292,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           replyToMessageId: replyingTo?.id,
         );
 
+        print('📤 MESSAGE - Send result: ${message != null}');
+
         if (message != null) {
           setState(() {
             messages.add(message);
             replyingTo = null;
           });
+          _scrollToBottom();
+          print('✅ MESSAGE - Added to UI, total messages: ${messages.length}');
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_scrollController.hasClients) {
@@ -149,12 +311,16 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               );
             }
           });
+        } else {
+          print('❌ MESSAGE - Send returned null');
         }
       }
 
       _messageController.clear();
+      print('✅ MESSAGE - Process completed');
+      _messageController.clear();
     } catch (e) {
-      print('Error sending message: $e');
+      print('❌ MESSAGE - Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -185,17 +351,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     setState(() => isSending = true);
 
     try {
-      // TODO: Upload image to your server/cloud storage
-      final fileUrl = 'https://via.placeholder.com/400';
-      final fileName = image.name;
-      final fileSize = await File(image.path).length();
+      final file = File(image.path);
+      final fileSize = await file.length();
+
+      // Convertir imagen a Base64
+      final base64Image = await ChatService.fileToBase64(file);
+      final dataUrl = ChatService.createDataUrl(base64Image, image.name);
 
       final message = await ChatService.sendMessage(
         groupId: widget.groupId,
         token: token,
         messageType: 'image',
-        fileUrl: fileUrl,
-        fileName: fileName,
+        fileBase64: dataUrl,
+        fileName: image.name,
         fileSize: fileSize,
         replyToMessageId: replyingTo?.id,
       );
@@ -210,6 +378,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       }
     } catch (e) {
       print('Error sending image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending image: $e'),
+            backgroundColor: const Color(0xFFD32F2F),
+          ),
+        );
+      }
     } finally {
       setState(() => isSending = false);
     }
@@ -226,18 +402,21 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     setState(() => isSending = true);
 
     try {
-      final file = result.files.first;
+      final file = File(result.files.first.path!);
+      final fileSize = result.files.first.size;
+      final fileName = result.files.first.name;
 
-      // TODO: Upload file to your server/cloud storage
-      final fileUrl = 'https://example.com/files/${file.name}';
+      // Convertir archivo a Base64
+      final base64File = await ChatService.fileToBase64(file);
+      final dataUrl = ChatService.createDataUrl(base64File, fileName);
 
       final message = await ChatService.sendMessage(
         groupId: widget.groupId,
         token: token,
         messageType: 'file',
-        fileUrl: fileUrl,
-        fileName: file.name,
-        fileSize: file.size,
+        fileBase64: dataUrl,
+        fileName: fileName,
+        fileSize: fileSize,
         replyToMessageId: replyingTo?.id,
       );
 
@@ -251,6 +430,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       }
     } catch (e) {
       print('Error sending file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending file: $e'),
+            backgroundColor: const Color(0xFFD32F2F),
+          ),
+        );
+      }
     } finally {
       setState(() => isSending = false);
     }
@@ -309,20 +496,22 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     try {
       final file = File(path);
       final fileSize = await file.length();
+      final fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-      // TODO: Upload audio to your server/cloud storage
-      final fileUrl =
-          'https://example.com/audio/${DateTime.now().millisecondsSinceEpoch}.m4a';
+      // Convertir audio a Base64
+      final base64Audio = await ChatService.fileToBase64(file);
+      final dataUrl = ChatService.createDataUrl(base64Audio, fileName);
+
+      const duration = 60;
 
       final message = await ChatService.sendMessage(
         groupId: widget.groupId,
         token: token,
         messageType: 'audio',
-        fileUrl: fileUrl,
-        fileName: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        fileBase64: dataUrl,
+        fileName: fileName,
         fileSize: fileSize,
-        duration: 60,
-        // TODO: Calculate actual duration
+        duration: duration,
         replyToMessageId: replyingTo?.id,
       );
 
@@ -336,6 +525,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       }
     } catch (e) {
       print('Error sending audio: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending audio: $e'),
+            backgroundColor: const Color(0xFFD32F2F),
+          ),
+        );
+      }
     } finally {
       setState(() => isSending = false);
     }
@@ -512,50 +709,59 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       ),
       body: Column(
         children: [
-          // Header sections with limited height
-          if (replyingTo != null)
-            SizedBox(height: 70, child: _buildReplyingToBar()),
-          if (editingMessage != null)
-            SizedBox(height: 60, child: _buildEditingBar()),
+          if (replyingTo != null) _buildReplyingToBar(),
+          if (editingMessage != null) _buildEditingBar(),
 
-          // Main content area - usa Expanded
+          // FIX: Use Expanded with proper constraints
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : messages.isEmpty
                 ? _buildEmptyState()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      return ChatMessageBubble(
-                        message: message,
-                        onReply: () => setState(() => replyingTo = message),
-                        onReact: () => _showReactionPicker(message),
-                        onEdit:
-                            message.isSentByCurrentUser &&
-                                message.messageType == 'text'
-                            ? () {
-                                setState(() {
-                                  editingMessage = message;
-                                  _messageController.text =
-                                      message.content ?? '';
-                                });
+                : Container(
+                    constraints: const BoxConstraints.expand(),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        print(
+                          '📱 Rendering message ${message.id} - Type: ${message.messageType} - FileUrl: ${message.fileUrl}',
+                        );
+                        return ChatMessageBubble(
+                          message: message,
+                          onReply: () => setState(() => replyingTo = message),
+                          onReact: () => _showReactionPicker(message),
+                          onEdit:
+                              message.isSentByCurrentUser &&
+                                  message.messageType == 'text'
+                              ? () {
+                                  setState(() {
+                                    editingMessage = message;
+                                    _messageController.text =
+                                        message.content ?? '';
+                                  });
+                                }
+                              : null,
+                          onDelete: message.isSentByCurrentUser
+                              ? () => _deleteMessage(message)
+                              : null,
+                          onImageTap: () {
+                            if (message.fileUrl != null) {
+                              String imageUrl;
+                              if (message.fileUrl!.startsWith('data:')) {
+                                imageUrl = message.fileUrl!;
+                              } else {
+                                imageUrl =
+                                    'http://192.168.0.206:5118/uploads/images/${message.fileUrl!}';
                               }
-                            : null,
-                        onDelete: message.isSentByCurrentUser
-                            ? () => _deleteMessage(message)
-                            : null,
-                        onImageTap: () {
-                          // TODO: Open image viewer
-                        },
-                        onAudioPlay: () {
-                          // TODO: Play audio
-                        },
-                      );
-                    },
+                              _showImagePreview(imageUrl);
+                            }
+                          },
+                        );
+                      },
+                    ),
                   ),
           ),
 
@@ -567,6 +773,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Widget _buildReplyingToBar() {
     return Container(
+      height: 70,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF324779).withOpacity(0.1),
@@ -623,6 +830,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Widget _buildEditingBar() {
     return Container(
+      height: 60,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFFF6B35).withOpacity(0.1),
@@ -711,89 +919,91 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ),
         ],
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            if (!isRecording) ...[
-              IconButton(
-                icon: const Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: Color(0xFF324779),
-                ),
-                onPressed: () => _showAttachmentOptions(),
+      child: Row(
+        // REMOVE SafeArea from here since we wrapped the entire body
+        children: [
+          if (!isRecording) ...[
+            IconButton(
+              icon: const Icon(
+                Icons.add_circle_outline_rounded,
+                color: Color(0xFF324779),
               ),
-            ],
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: isRecording
-                    ? Row(
-                        children: [
-                          const Icon(
-                            Icons.mic_rounded,
-                            color: Color(0xFFD32F2F),
-                            size: 24,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Recording...',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                                fontFamily: 'Sarabun',
-                              ),
+              onPressed: () => _showAttachmentOptions(),
+            ),
+          ],
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: isRecording
+                  ? Row(
+                      children: [
+                        const Icon(
+                          Icons.mic_rounded,
+                          color: Color(0xFFD32F2F),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Recording...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              fontFamily: 'Sarabun',
                             ),
                           ),
-                        ],
-                      )
-                    : TextField(
-                        controller: _messageController,
-                        decoration: const InputDecoration(
-                          hintText: 'Type a message...',
-                          hintStyle: TextStyle(fontFamily: 'Sarabun'),
-                          border: InputBorder.none,
                         ),
-                        style: const TextStyle(fontFamily: 'Sarabun'),
-                        maxLines: null,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isRecording)
-              IconButton(
-                icon: const Icon(Icons.stop_rounded, color: Color(0xFFD32F2F)),
-                onPressed: _stopRecording,
-              )
-            else if (_messageController.text.isEmpty)
-              IconButton(
-                icon: const Icon(Icons.mic_rounded, color: Color(0xFF324779)),
-                onPressed: _startRecording,
-              )
-            else
-              isSending
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                      ],
                     )
-                  : IconButton(
-                      icon: const Icon(
-                        Icons.send_rounded,
-                        color: Color(0xFF324779),
+                  : TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: 'Type a message...',
+                        hintStyle: TextStyle(fontFamily: 'Sarabun'),
+                        border: InputBorder.none,
                       ),
-                      onPressed: _sendMessage,
+                      style: const TextStyle(fontFamily: 'Sarabun'),
+                      maxLines: null,
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (text) {
+                        setState(() {});
+                      },
                     ),
-          ],
-        ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (isRecording)
+            IconButton(
+              icon: const Icon(Icons.stop_rounded, color: Color(0xFFD32F2F)),
+              onPressed: _stopRecording,
+            )
+          else if (_messageController.text.isEmpty && !isSending)
+            IconButton(
+              icon: const Icon(Icons.mic_rounded, color: Color(0xFF324779)),
+              onPressed: _startRecording,
+            )
+          else
+            isSending
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(
+                      Icons.send_rounded,
+                      color: Color(0xFF324779),
+                    ),
+                    onPressed: _sendMessage,
+                  ),
+        ],
       ),
     );
   }
@@ -888,7 +1098,43 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   source: ImageSource.camera,
                 );
                 if (image != null) {
-                  // TODO: Handle camera image
+                  // Usar la misma lógica de _sendImage
+                  final token = await AuthService.getAuthToken();
+                  if (token == null) return;
+
+                  setState(() => isSending = true);
+
+                  try {
+                    final file = File(image.path);
+                    final fileSize = await file.length();
+                    final base64Image = await ChatService.fileToBase64(file);
+                    final dataUrl = ChatService.createDataUrl(
+                      base64Image,
+                      image.name,
+                    );
+
+                    final message = await ChatService.sendMessage(
+                      groupId: widget.groupId,
+                      token: token,
+                      messageType: 'image',
+                      fileBase64: dataUrl,
+                      fileName: image.name,
+                      fileSize: fileSize,
+                      replyToMessageId: replyingTo?.id,
+                    );
+
+                    if (message != null) {
+                      setState(() {
+                        messages.add(message);
+                        replyingTo = null;
+                      });
+                      _scrollToBottom();
+                    }
+                  } catch (e) {
+                    print('Error sending camera image: $e');
+                  } finally {
+                    setState(() => isSending = false);
+                  }
                 }
               },
             ),

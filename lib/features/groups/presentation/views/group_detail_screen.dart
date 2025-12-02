@@ -36,7 +36,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       'label': 'Files',
       'color': Color(0xFF0F9D58),
     },
-    {'icon': Icons.quiz_rounded, 'label': 'Quiz', 'color': Color(0xFFFF6B35)},
     {
       'icon': Icons.video_call_rounded,
       'label': 'Calls',
@@ -211,10 +210,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                   tabs: _tabs
                       .map(
                         (tab) => Tab(
-                          icon: Icon(tab['icon'] as IconData, size: 24),
-                          text: tab['label'] as String,
-                        ),
-                      )
+                      icon: Icon(tab['icon'] as IconData, size: 24),
+                      text: tab['label'] as String,
+                    ),
+                  )
                       .toList(),
                 ),
               ),
@@ -225,7 +224,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                 children: [
                   _buildChatSection(),
                   _buildFilesSection(),
-                  _buildQuizSection(),
+                  // Eliminado _buildQuizSection()
                   CallsSectionWidget(
                     groupId: widget.groupId,
                     groupName: groupDetails!['name'],
@@ -477,11 +476,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   }
 
   Widget _buildStatCard(
-    IconData icon,
-    String value,
-    String label,
-    Color color,
-  ) {
+      IconData icon,
+      String value,
+      String label,
+      Color color,
+      ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -570,49 +569,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     );
   }
 
-  Widget _buildQuizSection() {
-    return Container(
-      color: Colors.white,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B35).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.quiz_rounded,
-                size: 64,
-                color: Color(0xFFFF6B35),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Quiz Section',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF333333),
-                fontFamily: 'Sarabun',
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Test your knowledge with group quizzes',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF777777),
-                fontFamily: 'Sarabun',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Eliminada la función _buildQuizSection()
 
   // OTHER FEATURES
 
@@ -888,10 +845,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
+      BuildContext context,
+      double shrinkOffset,
+      bool overlapsContent,
+      ) {
     return Container(color: Colors.white, child: tabBar);
   }
 

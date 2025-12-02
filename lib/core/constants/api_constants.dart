@@ -9,6 +9,8 @@ class ApiConstants {
     }
   }
 
+  static final String apiUrl = '$baseUrl/api';
+
   static final String loginEndpoint = '$baseUrl/Auth/login';
   static final String registerEndpoint = '$baseUrl/Auth/register';
   static final String validateTokenEndpoint = '$baseUrl/Auth/validate-token';
@@ -50,4 +52,7 @@ class ApiConstants {
   static String transferOwnership(int groupId) => '$studyGroupBase/$groupId/transfer-ownership';
 
   static final String documentBase = '$baseUrl/document';
+
+  static const int connectTimeout = 30000;
+  static const int receiveTimeout = 30000;
 }
