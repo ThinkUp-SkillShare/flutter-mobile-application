@@ -21,12 +21,9 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  List<Map<String, dynamic>> _subjects = [];
-  int? _selectedSubjectId;
   int? _selectedGroupId;
   File? _selectedFile;
   bool _isUploading = false;
-  bool _isLoadingSubjects = true;
 
   @override
   void initState() {
@@ -34,29 +31,6 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
     _selectedFile = widget.initialFile;
     if (widget.groups.isNotEmpty) {
       _selectedGroupId = widget.groups.first['id'];
-    }
-    _loadSubjects();
-  }
-
-  Future<void> _loadSubjects() async {
-    try {
-      final token = await AuthService.getAuthToken();
-      if (token == null) return;
-
-      // Cargar subjects desde el servicio existente
-      _subjects = await GroupService.getAllSubjects(token);
-
-      // Agregar opción "General" para documentos sin subject
-      _subjects.insert(0, {'id': null, 'name': 'General'});
-    } catch (e) {
-      print('Error loading subjects: $e');
-      // Si hay error, al menos tener la opción General
-      _subjects = [{'id': null, 'name': 'General'}];
-    } finally {
-      setState(() {
-        _isLoadingSubjects = false;
-        _selectedSubjectId = null; // General por defecto
-      });
     }
   }
 
@@ -99,7 +73,7 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
         file: _selectedFile!,
         token: token,
         description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
-        subjectId: _selectedSubjectId,
+        // Eliminado subjectId ya que no se necesita más
       );
 
       if (mounted) {
@@ -198,34 +172,6 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                 decoration: InputDecoration(
                   hintText: 'Describe el contenido del documento...',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Subject (categoría)
-              const Text('Materia', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2C3E50))),
-              const SizedBox(height: 8),
-              _isLoadingSubjects
-                  ? const CircularProgressIndicator()
-                  : Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: DropdownButton<int?>(
-                  value: _selectedSubjectId,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  items: _subjects.map((subject) {
-                    return DropdownMenuItem<int?>(
-                      value: subject['id'],
-                      child: Text(subject['name'] ?? 'General'),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedSubjectId = value),
                 ),
               ),
               const SizedBox(height: 16),

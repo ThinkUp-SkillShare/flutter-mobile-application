@@ -88,8 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Builds the main body based on the current state:
   /// loading, error, empty state, or content.
   Widget _buildBodyContent(
-      HomeViewModel viewModel, AppLocalizations localizations) {
-
+    HomeViewModel viewModel,
+    AppLocalizations localizations,
+  ) {
     /// Loading state: show shimmer/loaders.
     if (viewModel.isLoading) {
       return const HomeLoadingWidget();
@@ -104,11 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     /// Empty state when both sections have no data.
-    if (viewModel.featuredGroups.isEmpty &&
-        viewModel.popularSubjects.isEmpty) {
-      return HomeEmptyStateWidget(
-        onReload: () => viewModel.refreshData(),
-      );
+    if (viewModel.featuredGroups.isEmpty && viewModel.popularSubjects.isEmpty) {
+      return HomeEmptyStateWidget(onReload: () => viewModel.refreshData());
     }
 
     /// Normal state: show content sections.

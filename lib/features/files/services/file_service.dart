@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:skill_share/core/constants/api_constants.dart';
 
 class FileService {
   static Future<List<Map<String, dynamic>>> getGroupDocuments(
-      int groupId,
-      String token,
-      ) async {
+    int groupId,
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConstants.documentBase}/group/$groupId'),
@@ -20,7 +21,9 @@ class FileService {
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(json.decode(response.body));
       } else {
-        throw Exception('Failed to load group documents: ${response.statusCode}');
+        throw Exception(
+          'Failed to load group documents: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('Error fetching group documents: $e');
@@ -28,7 +31,9 @@ class FileService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getUserDocuments(String token) async {
+  static Future<List<Map<String, dynamic>>> getUserDocuments(
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConstants.documentBase}/user'),
@@ -41,7 +46,9 @@ class FileService {
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(json.decode(response.body));
       } else {
-        throw Exception('Failed to load user documents: ${response.statusCode}');
+        throw Exception(
+          'Failed to load user documents: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('Error fetching user documents: $e');
@@ -74,11 +81,13 @@ class FileService {
         request.fields['subjectId'] = subjectId.toString();
       }
 
-      request.files.add(await http.MultipartFile.fromPath(
-        'file',
-        file.path,
-        filename: file.path.split('/').last,
-      ));
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          file.path,
+          filename: file.path.split('/').last,
+        ),
+      );
 
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
@@ -122,7 +131,31 @@ class FileService {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
+        // Verificar si la respuesta es JSON o un archivo binario
+        final contentType = response.headers['content-type'];
+
+        if (contentType?.contains('application/json') == true) {
+          // Es JSON (probablemente una URL externa)
+          return json.decode(response.body) as Map<String, dynamic>;
+        } else {
+          // Es un archivo binario (descarga directa)
+          // El backend está sirviendo el archivo directamente
+          // Extraer información de los headers
+          final fileName = response.headers['content-disposition']?.split('filename=').last.replaceAll('"', '')
+              ?? 'document_$documentId';
+
+          // Guardar archivo temporalmente
+          final directory = await getTemporaryDirectory();
+          final filePath = '${directory.path}/$fileName';
+          final file = File(filePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          return {
+            'filePath': filePath,
+            'fileName': fileName,
+            'isLocalFile': true,
+          };
+        }
       } else {
         throw Exception('Failed to download document: ${response.statusCode}');
       }
@@ -132,7 +165,10 @@ class FileService {
     }
   }
 
-  static Future<Map<String, dynamic>> getGroupStatistics(int groupId, String token) async {
+  static Future<Map<String, dynamic>> getGroupStatistics(
+    int groupId,
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConstants.documentBase}/statistics/group/$groupId'),
@@ -154,7 +190,9 @@ class FileService {
   }
 
   // Obtener subjects populares para documentos
-  static Future<List<Map<String, dynamic>>> getPopularSubjectsForDocuments(String token) async {
+  static Future<List<Map<String, dynamic>>> getPopularSubjectsForDocuments(
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConstants.documentBase}/subjects/popular'),
@@ -167,11 +205,36 @@ class FileService {
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(json.decode(response.body));
       } else {
-        throw Exception('Failed to load popular subjects: ${response.statusCode}');
+        throw Exception(
+          'Failed to load popular subjects: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('Error fetching popular subjects: $e');
       return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getGlobalStatistics(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.documentBase}/statistics/global'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception(
+          'Failed to load global statistics: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error fetching global statistics: $e');
+      return {'totalDocuments': 0, 'myDocuments': 0, 'totalSize': 0};
     }
   }
 }
