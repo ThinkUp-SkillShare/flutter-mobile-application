@@ -145,8 +145,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
   // WebSocket methods
   void _connectToWebSocket() {
-    final baseUrl = ApiConstants.isEmulator ? '10.0.2.2:5118' : '192.168.0.206:5118';
-    final wsUrl = 'ws://$baseUrl/ws/call/$_callId?userId=$_myUserId';
+    final wsUrl = 'wss://${ApiConstants.wsBaseUrl}/ws/call/$_callId?userId=$_myUserId';
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
