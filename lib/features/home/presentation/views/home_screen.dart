@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../i18n/app_localizations.dart';
-import '../../../settings/presentation/views/settings_screen.dart';
+import 'package:skillshare/i18n/app_localizations.dart';
+import 'package:skillshare/features/settings/presentation/views/settings_screen.dart';
+import 'package:skillshare/features/auth/presentation/widgets/error_modal.dart';
 import '../view_models/home_view_model.dart';
 import '../widgets/featured_groups_section.dart';
 import '../widgets/home_empty_state_widget.dart';
@@ -23,11 +24,60 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    /// Home data is loaded after the first frame to ensure
-    /// that the widget tree is ready and context is available.
+    /// Home data is loaded after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeViewModel>().loadHomeData();
+      _loadHomeData();
     });
+  }
+
+  /// Loads home data and handles session expiration
+  Future<void> _loadHomeData() async {
+    try {
+      await context.read<HomeViewModel>().loadHomeData();
+
+      // Check if there's an error that requires user action
+      final viewModel = context.read<HomeViewModel>();
+      if (viewModel.error != null &&
+          viewModel.error!.contains('Session expired')) {
+        await _showSessionExpiredDialog();
+      }
+    } catch (e) {
+      // Handle unexpected errors
+      if (mounted) {
+        await ErrorModal.showAuthError(
+          context: context,
+          message: 'Failed to load home data. Please try again.',
+        );
+      }
+    }
+  }
+
+  /// Shows dialog when session expires
+  Future<void> _showSessionExpiredDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Session Expired'),
+        content: const Text('Your session has expired. Please login again.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToLogin();
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Navigates to login screen and clears navigation stack
+  void _navigateToLogin() {
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   @override
@@ -54,8 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
             letterSpacing: 0.5,
           ),
         ),
-
-        /// Settings button to navigate to preferences and account options.
         actions: [
           IconButton(
             onPressed: () {
@@ -69,12 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         centerTitle: true,
       ),
-
-      /// Using Consumer to rebuild the body when HomeViewModel notifies changes.
       body: Consumer<HomeViewModel>(
         builder: (context, viewModel, child) {
           return RefreshIndicator(
-            /// Pull-to-refresh manually reloads home data.
             onRefresh: () async {
               await viewModel.refreshData();
             },
@@ -85,18 +130,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds the main body based on the current state:
-  /// loading, error, empty state, or content.
+  /// Builds the main body based on the current state
   Widget _buildBodyContent(
     HomeViewModel viewModel,
     AppLocalizations localizations,
   ) {
-    /// Loading state: show shimmer/loaders.
-    if (viewModel.isLoading) {
+    // Check for session expiration error first
+    if (viewModel.error != null &&
+        viewModel.error!.contains('Session expired')) {
+      return _buildSessionExpiredView();
+    }
+
+    /// Loading state
+    if (viewModel.isLoading && viewModel.featuredGroups.isEmpty) {
       return const HomeLoadingWidget();
     }
 
-    /// Error state: display retry option.
+    /// Error state
     if (viewModel.error != null) {
       return HomeErrorWidget(
         error: viewModel.error!,
@@ -104,28 +154,58 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    /// Empty state when both sections have no data.
+    /// Empty state
     if (viewModel.featuredGroups.isEmpty && viewModel.popularSubjects.isEmpty) {
       return HomeEmptyStateWidget(onReload: () => viewModel.refreshData());
     }
 
-    /// Normal state: show content sections.
+    /// Normal state
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
 
-          /// Section for recommended / highlighted groups.
           FeaturedGroupsSection(
             featuredGroups: viewModel.featuredGroups,
-            title: localizations.featuredGroups,
+            title: localizations.featuredGroups ?? 'Featured Groups',
           ),
 
-          /// Section showing most-used or trending subjects.
           PopularSubjectsSection(
             popularSubjects: viewModel.popularSubjects,
-            title: localizations.popularSubjects,
+            title: localizations.popularSubjects ?? 'Popular Subjects',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds view for session expired
+  Widget _buildSessionExpiredView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.orange, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            'Session Expired',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your session has expired. Please login again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _navigateToLogin,
+            child: const Text('Login Again'),
           ),
         ],
       ),

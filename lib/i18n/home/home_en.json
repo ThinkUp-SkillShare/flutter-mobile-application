@@ -1,4 +1,8 @@
 {
   "featuredGroups": "Featured Groups",
-  "popularSubjects": "Popular Subjects"
+  "popularSubjects": "Popular Subjects",
+  "noGroupsAvailable": "No groups available",
+  "createOrJoinGroup": "Create or join a group to get started",
+  "reload": "Reload",
+  "exploreGroups": "Explore Groups"
 }

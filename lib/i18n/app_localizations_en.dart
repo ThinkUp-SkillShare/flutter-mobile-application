@@ -18,6 +18,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get popularSubjects => 'Popular Subjects';
 
   @override
+  String get noGroupsAvailable => 'No groups available';
+
+  @override
+  String get createOrJoinGroup => 'Create or join a group to get started';
+
+  @override
+  String get reload => 'Reload';
+
+  @override
+  String get exploreGroups => 'Explore Groups';
+
+  @override
   String get loginToYourAccount => 'Login to your Account';
 
   @override

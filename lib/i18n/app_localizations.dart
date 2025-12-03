@@ -116,6 +116,30 @@ abstract class AppLocalizations {
   /// **'Popular Subjects'**
   String get popularSubjects;
 
+  /// No description provided for @noGroupsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No groups available'**
+  String get noGroupsAvailable;
+
+  /// No description provided for @createOrJoinGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create or join a group to get started'**
+  String get createOrJoinGroup;
+
+  /// No description provided for @reload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get reload;
+
+  /// No description provided for @exploreGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Groups'**
+  String get exploreGroups;
+
   /// No description provided for @loginToYourAccount.
   ///
   /// In en, this message translates to:
