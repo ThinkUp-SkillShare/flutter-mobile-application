@@ -69,6 +69,36 @@ class ApiConstants {
       '$documentBase/statistics/group/$groupId';
   static String popularSubjectsForDocuments = '$documentBase/subjects/popular';
 
+  // Chat endpoints
+  static String get chatBase => '$baseUrl/groups';
+
+  static String chatMessages(int groupId) => '$chatBase/$groupId/chat/messages';
+
+  static String chatMessage(int groupId, int messageId) =>
+      '$chatBase/$groupId/chat/messages/$messageId';
+
+  static String chatMessageReactions(int groupId, int messageId) =>
+      '$chatBase/$groupId/chat/messages/$messageId/reactions';
+
+  static String markMessageAsRead(int groupId, int messageId) =>
+      '$chatBase/$groupId/chat/messages/$messageId/read';
+
+  // WebSocket chat endpoint
+  static String webSocketChat(int groupId) =>
+      'wss://$wsBaseUrl/ws/chat/$groupId';
+
+  // File upload endpoints
+  static String get uploadBase => '$fileBaseUrl/uploads';
+
+  static String audioUploadUrl(String fileName) =>
+      '$uploadBase/audio/$fileName';
+
+  static String imageUploadUrl(String fileName) =>
+      '$uploadBase/images/$fileName';
+
+  static String documentUploadUrl(String fileName) =>
+      '$uploadBase/documents/$fileName';
+
   // Call endpoints
   static String get callBase => '$baseUrl/Calls';
 
@@ -77,8 +107,10 @@ class ApiConstants {
   static String joinCallEndpoint = '$callBase/join-call';
   static String endCallEndpoint = '$callBase/end-call';
   static String getCallTokenEndpoint = '$callBase/get-token';
+
   static String callStats(int groupId) => '$callBase/call-stats/$groupId';
   static String userCallStats = '$callBase/user-stats';
+
   static String activeCall(int groupId) => '$callBase/active-call/$groupId';
 
   // WebSocket endpoints

@@ -1,3 +1,7 @@
+import 'package:skillshare/features/groups/domain/models/chats/reply_message.dart';
+
+import 'message_reaction.dart';
+
 class ChatMessage {
   final int id;
   final int groupId;
@@ -70,64 +74,6 @@ class ChatMessage {
           [],
       isRead: json['isRead'] ?? false,
       isSentByCurrentUser: json['isSentByCurrentUser'] ?? false,
-    );
-  }
-}
-
-class ReplyMessage {
-  final int id;
-  final int userId;
-  final String userEmail;
-  final String messageType;
-  final String? content;
-  final String? fileName;
-
-  ReplyMessage({
-    required this.id,
-    required this.userId,
-    required this.userEmail,
-    required this.messageType,
-    this.content,
-    this.fileName,
-  });
-
-  factory ReplyMessage.fromJson(Map<String, dynamic> json) {
-    return ReplyMessage(
-      id: json['id'],
-      userId: json['userId'],
-      userEmail: json['userEmail'],
-      messageType: json['messageType'],
-      content: json['content'],
-      fileName: json['fileName'],
-    );
-  }
-}
-
-class MessageReaction {
-  final int id;
-  final int messageId;
-  final int userId;
-  final String userEmail;
-  final String reaction;
-  final DateTime createdAt;
-
-  MessageReaction({
-    required this.id,
-    required this.messageId,
-    required this.userId,
-    required this.userEmail,
-    required this.reaction,
-    required this.createdAt,
-  });
-
-  factory MessageReaction.fromJson(Map<String, dynamic> json) {
-    return MessageReaction(
-      id: json['id'],
-      messageId: json['messageId'],
-      userId: json['userId'],
-      userEmail: json['userEmail'],
-      reaction: json['reaction'],
-      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 }

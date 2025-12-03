@@ -1,66 +1,44 @@
 import 'dart:convert';
-
 import 'package:web_socket_channel/io.dart';
+import '../../../../../core/constants/api_constants.dart';
+import '../../domain/models/chats/chat_message.dart';
 
-import '../../../../core/constants/api_constants.dart';
-import '../../domain/models/chat_message.dart';
-
+/// Manages WebSocket connections for real-time chat functionality
 class ChatWebSocketService {
-  static IOWebSocketChannel? _channel;
-  static int? _currentGroupId;
-  static bool _isConnecting = false;
-  static int _reconnectAttempts = 0;
+  static final ChatWebSocketService _instance = ChatWebSocketService._internal();
+
+  factory ChatWebSocketService() => _instance;
+
+  ChatWebSocketService._internal();
+
+  IOWebSocketChannel? _channel;
+  int? _currentGroupId;
+  bool _isConnecting = false;
+  int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 5;
 
-  static final Map<int, List<Function(ChatMessage)>> _messageListeners = {};
-  static final Map<int, List<Function()>> _connectionListeners = {};
-  static final Map<int, List<Function(dynamic)>> _errorListeners = {};
-  static final Map<int, List<Function()>> _disconnectionListeners = {};
+  final Map<int, List<Function(ChatMessage)>> _messageListeners = {};
+  final Map<int, List<Function()>> _connectionListeners = {};
+  final Map<int, List<Function(dynamic)>> _errorListeners = {};
+  final Map<int, List<Function()>> _disconnectionListeners = {};
 
-  static void connect(int groupId, String token) {
-    print('🔗 WebSocket - Connect called for group $groupId');
-
-    if (_currentGroupId == groupId && _channel != null && _channel!.sink != null) {
-      print('🔗 WebSocket - Already connected to group $groupId');
-      return;
-    }
-
-    if (_isConnecting) {
-      print('🔗 WebSocket - Already connecting, will retry');
-      return;
-    }
+  /// Connects to WebSocket server for the specified group
+  Future<void> connect(int groupId, String token) async {
+    if (_currentGroupId == groupId && _channel != null) return;
+    if (_isConnecting) return;
 
     _isConnecting = true;
     _currentGroupId = groupId;
 
-    print('🔗 WebSocket - Starting connection to group $groupId');
-    _tryConnect(groupId, token);
+    await _tryConnect(groupId, token);
   }
 
-  static void _tryConnect(int groupId, String token) async {
+  Future<void> _tryConnect(int groupId, String token) async {
     try {
-      print('🔗 WebSocket - Trying to connect...');
+      // Close existing connection if any
+      await _disconnect();
 
-      if (_channel != null && _channel!.sink != null) {
-        try {
-          _channel!.sink.close();
-        } catch (e) {
-          print('🔗 WebSocket - Error closing old connection: $e');
-        }
-        _channel = null;
-      }
-
-      final baseUrl = ApiConstants.baseUrl;
-      print('🔗 WebSocket - Base URL: $baseUrl');
-
-      final uri = Uri.parse(baseUrl.replaceFirst('/api', ''));
-
-      final protocol = uri.scheme == 'https' ? 'wss' : 'ws';
-      final wsUrl = '$protocol://${uri.host}:${uri.port}/ws/chat/$groupId';
-
-      print('🔗 WebSocket - Connecting to: $wsUrl');
-      print('🔗 WebSocket - GroupId: $groupId');
-      print('🔗 WebSocket - Token length: ${token.length}');
+      final wsUrl = ApiConstants.webSocketChat(groupId);
 
       _channel = IOWebSocketChannel.connect(
         wsUrl,
@@ -70,124 +48,64 @@ class ChatWebSocketService {
         },
       );
 
-      print('🔗 WebSocket - Connection established, setting up listeners...');
-
       _channel!.stream.listen(
-            (message) {
-          print('🔗 WebSocket - Raw message received: $message');
-          _handleMessage(message);
-        },
-        onError: (error) {
-          print('❌ WebSocket - Stream error: $error');
-          _isConnecting = false;
-          _notifyError(groupId, error);
-          _scheduleReconnect(groupId, token);
-        },
-        onDone: () {
-          print('🔌 WebSocket - Connection closed by server');
-          _isConnecting = false;
-          _notifyDisconnection(groupId);
-          _scheduleReconnect(groupId, token);
-        },
+        _handleIncomingMessage,
+        onError: (error) => _handleConnectionError(groupId, token, error),
+        onDone: () => _handleConnectionClosed(groupId, token),
       );
 
       _reconnectAttempts = 0;
       _isConnecting = false;
-
-      print('✅ WebSocket - Connected successfully to group $groupId');
       _notifyConnection(groupId);
 
-    } catch (e, stackTrace) {
-      print('❌ WebSocket - Connection failed: $e');
-      print('❌ WebSocket - Stack trace: $stackTrace');
+    } catch (e) {
       _isConnecting = false;
       _notifyError(groupId, e);
       _scheduleReconnect(groupId, token);
     }
   }
 
-  static void _notifyConnection(int groupId) {
-    final listeners = _connectionListeners[groupId] ?? [];
-    print('🔗 WebSocket - Notifying ${listeners.length} connection listeners');
-
-    for (final listener in listeners) {
-      try {
-        listener();
-      } catch (e) {
-        print('❌ WebSocket - Error in connection listener: $e');
-      }
-    }
-  }
-
-  static void _notifyDisconnection(int groupId) {
-    final listeners = _disconnectionListeners[groupId] ?? [];
-    print('🔌 WebSocket - Notifying ${listeners.length} disconnection listeners');
-
-    for (final listener in listeners) {
-      try {
-        listener();
-      } catch (e) {
-        print('❌ WebSocket - Error in disconnection listener: $e');
-      }
-    }
-  }
-
-  static void _scheduleReconnect(int groupId, String token) {
-    if (_reconnectAttempts < _maxReconnectAttempts) {
-      _reconnectAttempts++;
-      final delay = Duration(seconds: _reconnectAttempts * 2);
-
-      print('🔗 WebSocket - Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts/$_maxReconnectAttempts)');
-
-      Future.delayed(delay, () {
-        if (_currentGroupId == groupId) {
-          _tryConnect(groupId, token);
-        }
-      });
-    } else {
-      print('❌ WebSocket - Max reconnection attempts reached');
-      _reconnectAttempts = 0;
-    }
-  }
-
-  static void _handleMessage(String message) {
+  /// Handles incoming WebSocket messages
+  void _handleIncomingMessage(dynamic message) {
     try {
       final data = json.decode(message);
       final type = data['type'];
 
-      print('🔗 WebSocket - Handling message type: $type');
-
       if (type == 'new_message') {
-        final messageData = data['data'];
-        final normalizedData = _normalizeMessageData(messageData);
-        final chatMessage = ChatMessage.fromJson(normalizedData);
-
-        // Notificar a todos los listeners del grupo
-        final listeners = _messageListeners[_currentGroupId] ?? [];
-        print('🔗 WebSocket - Notifying ${listeners.length} listeners for new message');
-
-        for (final listener in listeners) {
-          try {
-            listener(chatMessage);
-          } catch (e) {
-            print('❌ WebSocket - Error in message listener: $e');
-          }
-        }
+        _handleNewMessage(data['data']);
       } else if (type == 'connection_established') {
-        print('✅ WebSocket - Connection established: ${data['message']}');
-      } else if (type == 'user_joined') {
-        print('👤 WebSocket - User joined: ${data['userId']}');
-      } else if (type == 'user_left') {
-        print('👤 WebSocket - User left: ${data['userId']}');
+        // Connection successful
+      } else if (type == 'user_joined' || type == 'user_left') {
+        // User presence updates can be handled here if needed
       }
-
     } catch (e) {
-      print('❌ WebSocket - Error parsing message: $e');
-      print('❌ WebSocket - Raw message: $message');
+      // Ignore parsing errors for non-JSON messages
     }
   }
 
-  static Map<String, dynamic> _normalizeMessageData(Map<String, dynamic> data) {
+  /// Processes new message data
+  void _handleNewMessage(Map<String, dynamic> messageData) {
+    if (_currentGroupId == null) return;
+
+    try {
+      final normalizedData = _normalizeMessageData(messageData);
+      final chatMessage = ChatMessage.fromJson(normalizedData);
+
+      final listeners = _messageListeners[_currentGroupId] ?? [];
+      for (final listener in listeners) {
+        try {
+          listener(chatMessage);
+        } catch (e) {
+          // Prevent error in one listener from breaking others
+        }
+      }
+    } catch (e) {
+      _notifyError(_currentGroupId!, e);
+    }
+  }
+
+  /// Normalizes message data to ensure consistent field names
+  Map<String, dynamic> _normalizeMessageData(Map<String, dynamic> data) {
     return {
       'id': data['Id'] ?? data['id'],
       'groupId': data['GroupId'] ?? data['groupId'],
@@ -202,105 +120,143 @@ class ChatWebSocketService {
       'duration': data['Duration'] ?? data['duration'],
       'replyToMessageId': data['ReplyToMessageId'] ?? data['replyToMessageId'],
       'replyToMessage': data['ReplyToMessage'] ?? data['replyToMessage'],
-      'isEdited': data['IsEdited'] ?? data['isEdited'],
-      'isDeleted': data['IsDeleted'] ?? data['isDeleted'],
+      'isEdited': data['IsEdited'] ?? data['isEdited'] ?? false,
+      'isDeleted': data['IsDeleted'] ?? data['isDeleted'] ?? false,
       'createdAt': data['CreatedAt'] ?? data['createdAt'],
       'updatedAt': data['UpdatedAt'] ?? data['updatedAt'],
       'reactions': data['Reactions'] ?? data['reactions'] ?? [],
-      'isRead': data['IsRead'] ?? data['isRead'],
-      'isSentByCurrentUser': data['IsSentByCurrentUser'] ?? data['isSentByCurrentUser'],
+      'isRead': data['IsRead'] ?? data['isRead'] ?? false,
+      'isSentByCurrentUser': data['IsSentByCurrentUser'] ?? data['isSentByCurrentUser'] ?? false,
     };
   }
 
-  static void addMessageListener(int groupId, Function(ChatMessage) listener) {
-    if (!_messageListeners.containsKey(groupId)) {
-      _messageListeners[groupId] = [];
+  /// Handles connection errors
+  void _handleConnectionError(int groupId, String token, dynamic error) {
+    _isConnecting = false;
+    _notifyError(groupId, error);
+    _scheduleReconnect(groupId, token);
+  }
+
+  /// Handles connection closed by server
+  void _handleConnectionClosed(int groupId, String token) {
+    _isConnecting = false;
+    _notifyDisconnection(groupId);
+    _scheduleReconnect(groupId, token);
+  }
+
+  /// Schedules reconnection attempt
+  void _scheduleReconnect(int groupId, String token) {
+    if (_reconnectAttempts < _maxReconnectAttempts) {
+      _reconnectAttempts++;
+      final delay = Duration(seconds: _reconnectAttempts * 2);
+
+      Future.delayed(delay, () {
+        if (_currentGroupId == groupId) {
+          _tryConnect(groupId, token);
+        }
+      });
+    } else {
+      _reconnectAttempts = 0;
     }
-    _messageListeners[groupId]!.add(listener);
-    print('👂 WebSocket - Added message listener for group $groupId. Total: ${_messageListeners[groupId]!.length}');
   }
 
-  static void removeMessageListener(int groupId, Function(ChatMessage) listener) {
-    _messageListeners[groupId]?.remove(listener);
-    print('➖ WebSocket - Removed message listener for group $groupId');
-  }
-
-  static void addConnectionListener(int groupId, Function() listener) {
-    if (!_connectionListeners.containsKey(groupId)) {
-      _connectionListeners[groupId] = [];
+  /// Notifies all connection listeners
+  void _notifyConnection(int groupId) {
+    final listeners = _connectionListeners[groupId] ?? [];
+    for (final listener in listeners) {
+      try {
+        listener();
+      } catch (_) {}
     }
-    _connectionListeners[groupId]!.add(listener);
-    print('👂 WebSocket - Added connection listener for group $groupId');
   }
 
-  static void removeConnectionListener(int groupId, Function() listener) {
-    _connectionListeners[groupId]?.remove(listener);
-    print('➖ WebSocket - Removed connection listener for group $groupId');
-  }
-
-  static void addErrorListener(int groupId, Function(dynamic) listener) {
-    if (!_errorListeners.containsKey(groupId)) {
-      _errorListeners[groupId] = [];
+  /// Notifies all disconnection listeners
+  void _notifyDisconnection(int groupId) {
+    final listeners = _disconnectionListeners[groupId] ?? [];
+    for (final listener in listeners) {
+      try {
+        listener();
+      } catch (_) {}
     }
-    _errorListeners[groupId]!.add(listener);
-    print('👂 WebSocket - Added error listener for group $groupId');
   }
 
-  static void removeErrorListener(int groupId, Function(dynamic) listener) {
-    _errorListeners[groupId]?.remove(listener);
-    print('➖ WebSocket - Removed error listener for group $groupId');
-  }
-
-  static void addDisconnectionListener(int groupId, Function() listener) {
-    if (!_disconnectionListeners.containsKey(groupId)) {
-      _disconnectionListeners[groupId] = [];
-    }
-    _disconnectionListeners[groupId]!.add(listener);
-    print('👂 WebSocket - Added disconnection listener for group $groupId');
-  }
-
-  static void removeDisconnectionListener(int groupId, Function() listener) {
-    _disconnectionListeners[groupId]?.remove(listener);
-    print('➖ WebSocket - Removed disconnection listener for group $groupId');
-  }
-
-  static void _notifyError(int groupId, dynamic error) {
+  /// Notifies all error listeners
+  void _notifyError(int groupId, dynamic error) {
     final listeners = _errorListeners[groupId] ?? [];
     for (final listener in listeners) {
       try {
         listener(error);
-      } catch (e) {
-        print('❌ WebSocket - Error in error listener: $e');
-      }
+      } catch (_) {}
     }
   }
 
-  static void sendMessage(dynamic message) {
-    if (_channel != null && _channel!.sink != null) {
+  /// Sends a message through WebSocket
+  void sendMessage(dynamic message) {
+    if (_channel != null) {
       try {
         _channel!.sink.add(json.encode(message));
-        print('📤 WebSocket - Message sent: $message');
-      } catch (e) {
-        print('❌ WebSocket - Error sending message: $e');
+      } catch (_) {
+        // Ignore send errors
       }
     }
   }
 
-  static void disconnect() {
+  /// Disconnects from WebSocket server
+  Future<void> disconnect() async {
+    await _disconnect();
+    _currentGroupId = null;
+    _reconnectAttempts = 0;
+  }
+
+  Future<void> _disconnect() async {
     if (_channel != null) {
-      _channel!.sink.close();
+      try {
+        _channel!.sink.close();
+      } catch (_) {
+        // Ignore close errors
+      }
       _channel = null;
-      _currentGroupId = null;
-      _isConnecting = false;
-      print('🔌 WebSocket - Disconnected');
     }
   }
 
-  static bool isConnected(int groupId) {
+  // Listener management methods
+  void addMessageListener(int groupId, Function(ChatMessage) listener) {
+    _messageListeners.putIfAbsent(groupId, () => []).add(listener);
+  }
+
+  void removeMessageListener(int groupId, Function(ChatMessage) listener) {
+    _messageListeners[groupId]?.remove(listener);
+  }
+
+  void addConnectionListener(int groupId, Function() listener) {
+    _connectionListeners.putIfAbsent(groupId, () => []).add(listener);
+  }
+
+  void removeConnectionListener(int groupId, Function() listener) {
+    _connectionListeners[groupId]?.remove(listener);
+  }
+
+  void addErrorListener(int groupId, Function(dynamic) listener) {
+    _errorListeners.putIfAbsent(groupId, () => []).add(listener);
+  }
+
+  void removeErrorListener(int groupId, Function(dynamic) listener) {
+    _errorListeners[groupId]?.remove(listener);
+  }
+
+  void addDisconnectionListener(int groupId, Function() listener) {
+    _disconnectionListeners.putIfAbsent(groupId, () => []).add(listener);
+  }
+
+  void removeDisconnectionListener(int groupId, Function() listener) {
+    _disconnectionListeners[groupId]?.remove(listener);
+  }
+
+  /// Checks if connected to a specific group
+  bool isConnected(int groupId) {
     return _currentGroupId == groupId && _channel != null;
   }
 
-  static int? getCurrentGroupId() {
-    return _currentGroupId;
-  }
+  /// Gets current connected group ID
+  int? get currentGroupId => _currentGroupId;
 }

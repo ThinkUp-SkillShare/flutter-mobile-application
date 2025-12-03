@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
 import '../../../../../core/constants/api_constants.dart';
-import '../../../domain/models/chat_message.dart';
+import '../../../../../core/utils/file_utils.dart';
+import '../../../domain/models/chats/chat_message.dart';
+import '../../../domain/models/chats/message_reaction.dart';
 import '../../../services/chat/audio_player_service.dart';
 
+/// Widget that displays a single chat message with support for text,
+/// images, audio, files, reactions, and replies.
 class ChatMessageBubble extends StatefulWidget {
   final ChatMessage message;
   final VoidCallback? onReply;
@@ -32,131 +37,104 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   bool _isAudioPlaying = false;
   Duration _audioPosition = Duration.zero;
   Duration _audioDuration = Duration.zero;
-  String? _currentAudioUrl;
+  String _audioUrl = '';
 
   @override
   void initState() {
     super.initState();
-    _currentAudioUrl = _getAudioUrl();
+    _audioUrl = _getAudioUrl();
     _setupAudioListeners();
     _initializeAudioState();
   }
 
+  @override
+  void dispose() {
+    // CORRECCIÓN: Usar removeListeners en lugar de setPlayStateListener(null)
+    _audioService.removeListeners(_audioUrl);
+    super.dispose();
+  }
+
+  /// Sets up audio playback state listeners
   void _setupAudioListeners() {
-    final myAudioUrl = _getAudioUrl();
+    if (_audioUrl.isEmpty) return;
 
-    print('🎵 Setting up audio listeners for: $myAudioUrl');
-
-    _audioService.setPlayStateListener((String audioUrl, bool isPlaying) {
-      print(
-        '🎵 Play state listener - URL: $audioUrl, Playing: $isPlaying, My URL: $myAudioUrl',
-      );
-
-      if (mounted) {
-        if (audioUrl == myAudioUrl) {
-          print('🎵 Updating play state for this message: $isPlaying');
-          setState(() {
-            _isAudioPlaying = isPlaying;
-          });
-        } else if (_isAudioPlaying && audioUrl != myAudioUrl) {
-          // Si otro audio empezó a reproducirse, pausar este
-          print('🎵 Another audio started, pausing this one');
-          setState(() {
-            _isAudioPlaying = false;
-          });
-        }
-      }
+    // Configurar listeners usando los nuevos métodos
+    _audioService.setPlayStateListener(_audioUrl, (bool isPlaying) {
+      if (!mounted) return;
+      setState(() => _isAudioPlaying = isPlaying);
     });
 
-    _audioService.setPositionListener((
-        String audioUrl,
-        Duration position,
-        Duration duration,
-        ) {
-      if (mounted && audioUrl == myAudioUrl) {
-        setState(() {
-          _audioPosition = position;
-          if (duration.inSeconds > 0) {
-            _audioDuration = duration;
-          }
-        });
-      }
-    });
-  }
-
-  void _initializeAudioState() {
-    final audioUrl = _getAudioUrl();
-
-    if (audioUrl.isNotEmpty) {
-      final isCurrentlyPlaying = _audioService.isPlaying(audioUrl);
-
+    _audioService.setPositionListener(_audioUrl, (
+      Duration position,
+      Duration duration,
+    ) {
+      if (!mounted) return;
       setState(() {
-        _currentAudioUrl = audioUrl;
-        _isAudioPlaying = isCurrentlyPlaying;
-        _audioPosition = _audioService.getCurrentPosition(audioUrl);
-        _audioDuration = Duration(seconds: widget.message.duration ?? 0);
+        _audioPosition = position;
+        if (duration.inSeconds > 0) {
+          _audioDuration = duration;
+        }
       });
-
-      print(
-        '🎵 Initial state - Playing: $isCurrentlyPlaying, Duration: ${_audioDuration.inSeconds}s',
-      );
-    }
+    });
   }
 
+  /// Initializes audio state for this message
+  void _initializeAudioState() {
+    if (_audioUrl.isEmpty) return;
+
+    setState(() {
+      _isAudioPlaying = _audioService.isPlaying(_audioUrl);
+      _audioPosition = _audioService.getCurrentPosition(_audioUrl);
+      _audioDuration = Duration(seconds: widget.message.duration ?? 0);
+    });
+  }
+
+  /// Gets the full URL for audio files
   String _getAudioUrl() {
     if (widget.message.fileUrl == null || widget.message.fileUrl!.isEmpty) {
       return '';
     }
 
+    // Usar la constante centralizada para construir URLs
     return ApiConstants.buildAudioUrl(widget.message.fileUrl);
   }
 
-  void _toggleAudioPlayback() async {
+  /// Toggles audio playback for this message
+  Future<void> _toggleAudioPlayback() async {
     try {
-      final audioUrl = _getAudioUrl();
-      print('🎵 Toggling playback for: $audioUrl');
+      if (_audioUrl.isEmpty) return;
 
-      if (audioUrl.isEmpty) {
-        print('❌ Empty audio URL');
-        return;
-      }
-
-      if (_audioService.isPlaying(audioUrl)) {
-        print('🎵 Pausing audio');
+      if (_audioService.isPlaying(_audioUrl)) {
         await _audioService.pauseAudio();
       } else {
-        print('🎵 Playing audio');
-        await _audioService.playAudio(audioUrl);
+        await _audioService.playAudio(_audioUrl);
       }
-    } catch (e, stackTrace) {
-      print('❌ Error toggling audio playback: $e');
-      print('❌ Stack trace: $stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error playing audio: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+    } catch (e) {
+      _showErrorSnackbar('Error playing audio: ${e.toString()}');
     }
   }
 
+  /// Seeks to a specific position in the audio
   void _seekAudio(double value) {
     final newPosition = Duration(seconds: value.toInt());
     _audioService.seekAudio(newPosition);
 
     if (mounted) {
-      setState(() {
-        _audioPosition = newPosition;
-      });
+      setState(() => _audioPosition = newPosition);
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  /// Shows an error snackbar
+  void _showErrorSnackbar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -175,19 +153,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          if (!isMe)
-            Padding(
-              padding: const EdgeInsets.only(left: 12, bottom: 4),
-              child: Text(
-                widget.message.userEmail.split('@')[0],
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF324779),
-                  fontFamily: 'Sarabun',
-                ),
-              ),
-            ),
+          if (!isMe) _buildSenderName(),
           GestureDetector(
             onLongPress: () => _showMessageOptions(context),
             child: Container(
@@ -218,33 +184,29 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _formatTime(widget.message.createdAt),
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                ),
-                if (isMe) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    widget.message.isRead ? Icons.done_all : Icons.done,
-                    size: 14,
-                    color: widget.message.isRead
-                        ? const Color(0xFF0F9D58)
-                        : Colors.grey[500],
-                  ),
-                ],
-              ],
-            ),
-          ),
+          _buildMessageFooter(isMe),
         ],
       ),
     );
   }
 
+  /// Builds sender name for messages from other users
+  Widget _buildSenderName() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, bottom: 4),
+      child: Text(
+        widget.message.userEmail.split('@')[0],
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF324779),
+          fontFamily: 'Sarabun',
+        ),
+      ),
+    );
+  }
+
+  /// Builds reply preview when message is a reply
   Widget _buildReplyPreview(bool isMe) {
     final reply = widget.message.replyToMessage!;
     return Container(
@@ -272,7 +234,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
             ),
           ),
           Text(
-            reply.content ?? 'Archivo adjunto',
+            reply.content ?? 'Attachment',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -285,35 +247,199 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     );
   }
 
+  /// Builds the main message content based on type
   Widget _buildMessageContent(bool isMe) {
     switch (widget.message.messageType) {
       case 'text':
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(
-            widget.message.content ?? '',
-            style: TextStyle(
-              fontSize: 15,
-              color: isMe ? Colors.white : const Color(0xFF333333),
-              height: 1.4,
-              fontFamily: 'Sarabun',
-            ),
-          ),
-        );
+        return _buildTextMessage(isMe);
       case 'image':
         return _buildImageMessage(isMe);
       case 'audio':
-        if (widget.message.fileUrl != null &&
-            widget.message.fileUrl!.isNotEmpty) {
-          return _buildAudioMessage(isMe);
-        } else {
-          return _buildUnavailableAudioMessage(isMe);
-        }
+        return _buildAudioMessage(isMe);
       case 'file':
         return _buildFileMessage(isMe);
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  /// Builds text message content
+  Widget _buildTextMessage(bool isMe) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Text(
+        widget.message.content ?? '',
+        style: TextStyle(
+          fontSize: 15,
+          color: isMe ? Colors.white : const Color(0xFF333333),
+          height: 1.4,
+          fontFamily: 'Sarabun',
+        ),
+      ),
+    );
+  }
+
+  /// Builds image message content
+  Widget _buildImageMessage(bool isMe) {
+    return GestureDetector(
+      onTap: widget.onImageTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: widget.message.fileUrl != null
+            ? _buildImageWidget()
+            : const Icon(Icons.error),
+      ),
+    );
+  }
+
+  /// Builds image widget handling both base64 and URL images
+  Widget _buildImageWidget() {
+    final fileUrl = widget.message.fileUrl!;
+
+    if (fileUrl.startsWith('data:')) {
+      final base64String = fileUrl.split(',').last;
+      try {
+        return Image.memory(
+          base64.decode(base64String),
+          width: 250,
+          height: 200,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildImageError(),
+        );
+      } catch (e) {
+        return _buildImageError();
+      }
+    } else {
+      final imageUrl = ApiConstants.buildFileUrl(fileUrl);
+      return Image.network(
+        imageUrl,
+        width: 250,
+        height: 200,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildImageLoading();
+        },
+        errorBuilder: (context, error, stackTrace) => _buildImageError(),
+      );
+    }
+  }
+
+  Widget _buildImageLoading() {
+    return Container(
+      width: 250,
+      height: 200,
+      color: Colors.grey[200],
+      child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildImageError() {
+    return Container(
+      width: 250,
+      height: 200,
+      color: Colors.grey[300],
+      child: const Icon(Icons.broken_image, color: Colors.grey, size: 50),
+    );
+  }
+
+  /// Builds audio message content
+  Widget _buildAudioMessage(bool isMe) {
+    if (_audioUrl.isEmpty) {
+      return _buildUnavailableAudioMessage(isMe);
+    }
+
+    final durationSeconds = _audioDuration.inSeconds > 0
+        ? _audioDuration.inSeconds.toDouble()
+        : (widget.message.duration ?? 0).toDouble();
+
+    final positionSeconds = _audioPosition.inSeconds.toDouble();
+    final safePosition = positionSeconds.clamp(
+      0.0,
+      durationSeconds > 0 ? durationSeconds : 1.0,
+    );
+
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        children: [
+          _buildAudioPlayButton(isMe),
+          const SizedBox(width: 12),
+          _buildAudioControls(isMe, safePosition, durationSeconds),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudioPlayButton(bool isMe) {
+    return GestureDetector(
+      onTap: _toggleAudioPlayback,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.white.withOpacity(0.2) : Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            if (!isMe) BoxShadow(color: Colors.black12, blurRadius: 2),
+          ],
+        ),
+        child: Icon(
+          _isAudioPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          color: isMe ? Colors.white : const Color(0xFF324779),
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioControls(bool isMe, double position, double duration) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              trackHeight: 3,
+              activeTrackColor: isMe ? Colors.white : const Color(0xFF324779),
+              inactiveTrackColor: isMe ? Colors.white30 : Colors.grey[300],
+              thumbColor: isMe ? Colors.white : const Color(0xFF324779),
+            ),
+            child: Slider(
+              value: position,
+              min: 0,
+              max: duration > 0 ? duration : 1.0,
+              onChanged: _seekAudio,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatDuration(_audioPosition.inSeconds),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isMe ? Colors.white70 : Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  _formatDuration(duration.toInt()),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isMe ? Colors.white70 : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildUnavailableAudioMessage(bool isMe) {
@@ -325,7 +451,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
           Icon(Icons.error_outline, color: isMe ? Colors.white70 : Colors.grey),
           const SizedBox(width: 8),
           Text(
-            'Audio no disponible',
+            'Audio unavailable',
             style: TextStyle(color: isMe ? Colors.white : Colors.grey),
           ),
         ],
@@ -333,200 +459,61 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     );
   }
 
-  Widget _buildImageMessage(bool isMe) {
-    return GestureDetector(
-      onTap: widget.onImageTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: widget.message.fileUrl != null
-            ? _buildImageFromBase64OrUrl(widget.message.fileUrl!)
-            : const Icon(Icons.error),
-      ),
-    );
-  }
-
-  Widget _buildImageFromBase64OrUrl(String fileUrl) {
-    if (fileUrl.startsWith('data:')) {
-      final base64String = fileUrl.split(',').last;
-      return Image.memory(
-        base64Decode(base64String),
-        width: 250,
-        height: 200,
-        fit: BoxFit.cover,
-      );
-    } else {
-      // USAR LA CONSTANTE CENTRALIZADA
-      final imageUrl = ApiConstants.buildFileUrl(fileUrl);
-      return Image.network(
-        imageUrl,
-        width: 250,
-        height: 200,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          width: 250,
-          height: 200,
-          color: Colors.grey[300],
-          child: const Icon(Icons.broken_image, color: Colors.grey),
-        ),
-      );
-    }
-  }
-
-  Widget _buildAudioMessage(bool isMe) {
-    final durationSeconds = _audioDuration.inSeconds > 0
-        ? _audioDuration.inSeconds.toDouble()
-        : (widget.message.duration ?? 0).toDouble();
-
-    final positionSeconds = _audioPosition.inSeconds.toDouble();
-    final safePosition = positionSeconds.clamp(
-      0.0,
-      durationSeconds > 0 ? durationSeconds : 1.0,
-    );
-
-    print(
-      '🎵 BUILDING AUDIO MESSAGE - '
-          'Playing: $_isAudioPlaying, '
-          'Position: $positionSeconds, '
-          'Duration: $durationSeconds',
-    );
-
-    return Container(
-      width: 260,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: _toggleAudioPlayback,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isMe ? Colors.white.withOpacity(0.2) : Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  if (!isMe) BoxShadow(color: Colors.black12, blurRadius: 2),
-                ],
-              ),
-              child: Icon(
-                _isAudioPlaying
-                    ? Icons.pause_rounded
-                    : Icons.play_arrow_rounded,
-                color: isMe ? Colors.white : const Color(0xFF324779),
-                size: 24,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 6,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 14,
-                    ),
-                    trackHeight: 3,
-                    activeTrackColor: isMe
-                        ? Colors.white
-                        : const Color(0xFF324779),
-                    inactiveTrackColor: isMe
-                        ? Colors.white30
-                        : Colors.grey[300],
-                    thumbColor: isMe ? Colors.white : const Color(0xFF324779),
-                  ),
-                  child: Slider(
-                    value: safePosition,
-                    min: 0,
-                    max: durationSeconds > 0 ? durationSeconds : 1.0,
-                    onChanged: _seekAudio,
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(_audioPosition.inSeconds),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isMe ? Colors.white70 : Colors.grey[600],
-                        ),
-                      ),
-
-                      Text(
-                        _formatDuration(durationSeconds.toInt()),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isMe ? Colors.white70 : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  /// Builds file message content
   Widget _buildFileMessage(bool isMe) {
     return Container(
       padding: const EdgeInsets.all(12),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isMe
-                  ? Colors.white.withOpacity(0.2)
-                  : const Color(0xFF324779).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              _getFileIcon(widget.message.fileName ?? ''),
-              color: isMe ? Colors.white : const Color(0xFF324779),
-              size: 24,
-            ),
-          ),
+          _buildFileIcon(isMe),
           const SizedBox(width: 12),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.message.fileName ?? 'File',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isMe ? Colors.white : const Color(0xFF333333),
-                    fontFamily: 'Sarabun',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatFileSize(widget.message.fileSize ?? 0),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isMe
-                        ? Colors.white.withOpacity(0.7)
-                        : Colors.grey[600],
-                    fontFamily: 'Sarabun',
-                  ),
-                ),
-              ],
+          _buildFileInfo(isMe),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileIcon(bool isMe) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isMe
+            ? Colors.white.withOpacity(0.2)
+            : const Color(0xFF324779).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        _getFileIcon(widget.message.fileName ?? ''),
+        color: isMe ? Colors.white : const Color(0xFF324779),
+        size: 24,
+      ),
+    );
+  }
+
+  Widget _buildFileInfo(bool isMe) {
+    return Flexible(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.message.fileName ?? 'File',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isMe ? Colors.white : const Color(0xFF333333),
+              fontFamily: 'Sarabun',
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            FileUtils.formatFileSize(widget.message.fileSize ?? 0),
+            style: TextStyle(
+              fontSize: 12,
+              color: isMe ? Colors.white.withOpacity(0.7) : Colors.grey[600],
+              fontFamily: 'Sarabun',
             ),
           ),
         ],
@@ -534,6 +521,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     );
   }
 
+  /// Builds reactions on the message
   Widget _buildReactions() {
     final reactionGroups = <String, List<MessageReaction>>{};
     for (var reaction in widget.message.reactions) {
@@ -577,6 +565,33 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     );
   }
 
+  /// Builds message footer with timestamp and read status
+  Widget _buildMessageFooter(bool isMe) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _formatTime(widget.message.createdAt),
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          ),
+          if (isMe) ...[
+            const SizedBox(width: 4),
+            Icon(
+              widget.message.isRead ? Icons.done_all : Icons.done,
+              size: 14,
+              color: widget.message.isRead
+                  ? const Color(0xFF0F9D58)
+                  : Colors.grey[500],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Shows message options bottom sheet
   void _showMessageOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -592,80 +607,49 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const _BottomSheetHandle(),
             const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(
-                Icons.reply_rounded,
-                color: Color(0xFF324779),
-              ),
-              title: const Text(
-                'Reply',
-                style: TextStyle(fontFamily: 'Sarabun'),
-              ),
+            const _BottomSheetTitle('Message Options'),
+            const SizedBox(height: 16),
+            _buildOptionTile(
+              icon: Icons.reply_rounded,
+              label: 'Reply',
+              color: const Color(0xFF324779),
               onTap: () {
                 Navigator.pop(context);
                 widget.onReply?.call();
               },
             ),
-            ListTile(
-              leading: const Icon(
-                Icons.add_reaction_outlined,
-                color: Color(0xFF324779),
-              ),
-              title: const Text(
-                'React',
-                style: TextStyle(fontFamily: 'Sarabun'),
-              ),
+            _buildOptionTile(
+              icon: Icons.add_reaction_outlined,
+              label: 'React',
+              color: const Color(0xFF324779),
               onTap: () {
                 Navigator.pop(context);
                 widget.onReact?.call();
               },
             ),
             if (widget.message.isSentByCurrentUser &&
-                widget.message.messageType == 'text') ...[
-              ListTile(
-                leading: const Icon(
-                  Icons.edit_rounded,
-                  color: Color(0xFF324779),
-                ),
-                title: const Text(
-                  'Edit',
-                  style: TextStyle(fontFamily: 'Sarabun'),
-                ),
+                widget.message.messageType == 'text')
+              _buildOptionTile(
+                icon: Icons.edit_rounded,
+                label: 'Edit',
+                color: const Color(0xFF324779),
                 onTap: () {
                   Navigator.pop(context);
                   widget.onEdit?.call();
                 },
               ),
-            ],
-            if (widget.message.isSentByCurrentUser) ...[
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_rounded,
-                  color: Color(0xFFD32F2F),
-                ),
-                title: const Text(
-                  'Delete',
-                  style: TextStyle(
-                    fontFamily: 'Sarabun',
-                    color: Color(0xFFD32F2F),
-                  ),
-                ),
+            if (widget.message.isSentByCurrentUser)
+              _buildOptionTile(
+                icon: Icons.delete_rounded,
+                label: 'Delete',
+                color: const Color(0xFFD32F2F),
                 onTap: () {
                   Navigator.pop(context);
                   widget.onDelete?.call();
                 },
               ),
-            ],
             const SizedBox(height: 20),
           ],
         ),
@@ -673,6 +657,23 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     );
   }
 
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(
+        label,
+        style: TextStyle(fontFamily: 'Sarabun', color: color),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  /// Formats time for display
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
@@ -688,6 +689,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     }
   }
 
+  /// Formats duration in MM:SS format
   String _formatDuration(int seconds) {
     if (seconds < 0) seconds = 0;
 
@@ -701,12 +703,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     }
   }
 
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
+  /// Gets appropriate icon for file type
   IconData _getFileIcon(String fileName) {
     final ext = fileName.split('.').last.toLowerCase();
     switch (ext) {
@@ -725,5 +722,37 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         return Icons.insert_drive_file;
     }
   }
+}
 
+/// Reusable bottom sheet handle widget
+class _BottomSheetHandle extends StatelessWidget {
+  const _BottomSheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 10, bottom: 20),
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey[400],
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+}
+
+/// Reusable bottom sheet title widget
+class _BottomSheetTitle extends StatelessWidget {
+  final String title;
+
+  const _BottomSheetTitle(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    );
+  }
 }
