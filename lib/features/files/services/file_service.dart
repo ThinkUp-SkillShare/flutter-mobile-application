@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:skill_share/core/constants/api_constants.dart';
+import 'package:skillshare/core/constants/api_constants.dart';
 
 class FileService {
   static Future<List<Map<String, dynamic>>> getGroupDocuments(

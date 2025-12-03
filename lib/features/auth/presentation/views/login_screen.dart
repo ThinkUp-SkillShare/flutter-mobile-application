@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/features/auth/domain/use_cases/login_use_case.dart';
-import 'package:skill_share/features/register/presentation/views/register_screen.dart';
-import 'package:skill_share/i18n/app_localizations.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/features/auth/domain/use_cases/login_use_case.dart';
+import 'package:skillshare/features/register/presentation/views/register_screen.dart';
+import 'package:skillshare/i18n/app_localizations.dart';
 
 import '../../application/auth_service.dart';
 import '../../infrastructure/datasources/remote/auth_remote_data_source.dart';

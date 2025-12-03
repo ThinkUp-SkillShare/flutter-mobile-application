@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/i18n/app_localizations.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/i18n/app_localizations.dart';
 
 /// Widget for the email input field with validation
 class EmailField extends StatelessWidget {

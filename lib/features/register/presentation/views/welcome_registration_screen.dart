@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/features/register/presentation/views/about_yourself_screen.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/features/register/presentation/views/about_yourself_screen.dart';
 
 class WelcomeRegistrationScreen extends StatelessWidget {
   final String email;

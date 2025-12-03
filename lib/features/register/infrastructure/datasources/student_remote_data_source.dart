@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:skill_share/core/constants/api_constants.dart';
+import 'package:skillshare/core/constants/api_constants.dart';
 
 // Interfaz
 abstract class StudentRemoteDataSource {

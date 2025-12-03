@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/features/register/presentation/views/personal_identity_screen.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/features/register/presentation/views/personal_identity_screen.dart';
 
 class AcademicWorldScreen extends StatefulWidget {
   final String email;

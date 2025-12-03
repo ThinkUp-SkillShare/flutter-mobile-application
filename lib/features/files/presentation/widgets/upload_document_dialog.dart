@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:skill_share/features/files/services/file_service.dart';
-import 'package:skill_share/features/groups/services/group_service.dart';
+import 'package:skillshare/features/files/services/file_service.dart';
+import 'package:skillshare/features/groups/services/group_service.dart';
 
 import '../../../auth/application/auth_service.dart';
 

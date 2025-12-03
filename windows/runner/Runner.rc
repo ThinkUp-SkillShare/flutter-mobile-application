@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "skill_share" "\0"
+            VALUE "CompanyName", "com.thinkup" "\0"
+            VALUE "FileDescription", "skillshare" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "skill_share" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "skill_share.exe" "\0"
-            VALUE "ProductName", "skill_share" "\0"
+            VALUE "InternalName", "skillshare" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 com.thinkup. All rights reserved." "\0"
+            VALUE "OriginalFilename", "skillshare.exe" "\0"
+            VALUE "ProductName", "skillshare" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

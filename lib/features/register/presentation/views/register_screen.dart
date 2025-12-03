@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/features/auth/presentation/views/login_screen.dart';
-import 'package:skill_share/features/register/presentation/views/welcome_registration_screen.dart';
-import 'package:skill_share/i18n/app_localizations.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/features/auth/presentation/views/login_screen.dart';
+import 'package:skillshare/features/register/presentation/views/welcome_registration_screen.dart';
+import 'package:skillshare/i18n/app_localizations.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});

@@ -1,7 +1,7 @@
 // lib/features/auth/presentation/widgets/sign_in_button.dart
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/i18n/app_localizations.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/i18n/app_localizations.dart';
 
 /// Widget for the sign-in button with loading state
 class SignInButton extends StatelessWidget {

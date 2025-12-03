@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
-import 'package:skill_share/features/register/presentation/views/completion_screen.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
+import 'package:skillshare/features/register/presentation/views/completion_screen.dart';
 import 'package:get_it/get_it.dart';
-import 'package:skill_share/features/auth/domain/entities/user_entity.dart';
+import 'package:skillshare/features/auth/domain/entities/user_entity.dart';
 import 'package:dio/dio.dart';
-import 'package:skill_share/core/constants/api_constants.dart';
+import 'package:skillshare/core/constants/api_constants.dart';
 
 import '../../../auth/application/auth_service.dart';
 import '../../../auth/domain/use_cases/login_use_case.dart';

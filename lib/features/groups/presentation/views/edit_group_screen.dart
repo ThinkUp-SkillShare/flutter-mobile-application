@@ -259,7 +259,7 @@ class _EditGroupScreenState extends State<EditGroupScreen> {
               TextFormField(
                 controller: _imageUrlController,
                 decoration: InputDecoration(
-                  hintText: 'https://example.com/image.jpg',
+                  hintText: 'https://thinkup.com/image.jpg',
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   filled: true,
                   fillColor: Colors.white,

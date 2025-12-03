@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/core/themes/app_theme.dart';
+import 'package:skillshare/core/themes/app_theme.dart';
 
 class CompletionScreen extends StatelessWidget {
   final String nickname;

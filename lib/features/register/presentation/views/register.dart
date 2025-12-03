@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skill_share/src/services/userStorage_service.dart';
+import 'package:skillshare/src/services/userStorage_service.dart';
 import '../../../../src/models/user.dart';
 
 class SignUpScreen extends StatefulWidget {
