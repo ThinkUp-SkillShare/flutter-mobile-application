@@ -69,6 +69,22 @@ class ApiConstants {
       '$documentBase/statistics/group/$groupId';
   static String popularSubjectsForDocuments = '$documentBase/subjects/popular';
 
+  // Call endpoints
+  static String get callBase => '$baseUrl/Calls';
+
+  static String callHistory(int groupId) => '$callBase/call-history/$groupId';
+  static String createCallRoom = '$callBase/create-room';
+  static String joinCallEndpoint = '$callBase/join-call';
+  static String endCallEndpoint = '$callBase/end-call';
+  static String getCallTokenEndpoint = '$callBase/get-token';
+  static String callStats(int groupId) => '$callBase/call-stats/$groupId';
+  static String userCallStats = '$callBase/user-stats';
+  static String activeCall(int groupId) => '$callBase/active-call/$groupId';
+
+  // WebSocket endpoints
+  static String webSocketCall(String callId, String userId) =>
+      'wss://$wsBaseUrl/ws/call/$callId?userId=$userId';
+
   /// Standard headers for API requests without authentication
   static Map<String, String> get headers {
     return {'Content-Type': 'application/json', 'Accept': 'application/json'};

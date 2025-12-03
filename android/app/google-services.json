@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "647786466720",
+    "project_id": "skillshare-flutter-da4ad",
+    "storage_bucket": "skillshare-flutter-da4ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647786466720:android:9b8dbb6c4c40e6053f28c5",
+        "android_client_info": {
+          "package_name": "com.thinkup.skillshare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAA3X5Be0omfOuCBiq-kFtdm0A5xAdQu8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
