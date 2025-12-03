@@ -1,4 +1,4 @@
-package com.example.skill_share
+package com.thinkup.skillshare
 
 import io.flutter.embedding.android.FlutterActivity
 
