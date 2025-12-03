@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Widget displaying user statistics in a card format.
+/// Shows counts for created groups, shared files, and joined groups.
 class ProfileStatsWidget extends StatelessWidget {
   final String groupsCount;
   final String docsCount;
@@ -12,7 +14,42 @@ class ProfileStatsWidget extends StatelessWidget {
     required this.friendsCount,
   });
 
-  Widget _buildStatCard(String number, String label, IconData icon, Color color) {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          _buildStatCard(
+            number: groupsCount,
+            label: 'Created\nGroups',
+            icon: Icons.create,
+            color: Colors.orange.shade700,
+          ),
+          _buildStatCard(
+            number: docsCount,
+            label: 'Shared\nFiles',
+            icon: Icons.folder,
+            color: Colors.blue.shade700,
+          ),
+          _buildStatCard(
+            number: friendsCount,
+            label: 'Joined\nGroups',
+            icon: Icons.group_add,
+            color: Colors.green.shade700,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single statistic card with icon, number, and label.
+  Widget _buildStatCard({
+    required String number,
+    required String label,
+    required IconData icon,
+    required Color color,
+  }) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -33,54 +70,52 @@ class ProfileStatsWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
-            ),
+            _buildIconContainer(icon, color),
             const SizedBox(height: 8),
-            Text(
-              number,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: color,
-              ),
-            ),
+            _buildNumberText(number, color),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            _buildLabelText(label),
           ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildIconContainer(IconData icon, Color color) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          _buildStatCard(groupsCount, 'Grupos\nCreados', Icons.create, Colors.orange.shade700),
-          _buildStatCard(docsCount, 'Archivos\nCompartidos', Icons.folder, Colors.blue.shade700),
-          _buildStatCard(friendsCount, 'Grupos\nUnidos', Icons.group_add, Colors.green.shade700),
-        ],
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
       ),
+      child: Icon(
+        icon,
+        color: color,
+        size: 20,
+      ),
+    );
+  }
+
+  Widget _buildNumberText(String number, Color color) {
+    return Text(
+      number,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 20,
+        color: color,
+      ),
+    );
+  }
+
+  Widget _buildLabelText(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey.shade600,
+        fontWeight: FontWeight.w500,
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 
+/// Represents a Student entity with personal information and user data.
+/// Follows DDD principles by encapsulating business logic within the entity.
 class Student {
   final int id;
   final String firstName;
@@ -28,6 +30,7 @@ class Student {
     this.user,
   });
 
+  /// Creates a Student instance from JSON data.
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
       id: json['id'],
@@ -44,6 +47,7 @@ class Student {
     );
   }
 
+  /// Converts the Student instance to JSON format.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -60,6 +64,7 @@ class Student {
     };
   }
 
+  /// Creates a copy of the Student with updated fields.
   Student copyWith({
     int? id,
     String? firstName,
@@ -88,6 +93,7 @@ class Student {
     );
   }
 
+  /// Calculates the student's age based on date of birth.
   int? get age {
     if (dateBirth == null) return null;
     final now = DateTime.now();
@@ -99,6 +105,7 @@ class Student {
     return age;
   }
 
+  /// Returns the flag emoji for the student's country.
   String get countryFlag {
     const countryFlags = {
       'Perú': '🇵🇪',
@@ -122,6 +129,7 @@ class Student {
     return countryFlags[country] ?? '🏳️';
   }
 
+  /// Returns the appropriate icon for the student's gender.
   IconData get genderIcon {
     switch (gender.toLowerCase()) {
       case 'male':
@@ -137,6 +145,7 @@ class Student {
     }
   }
 
+  /// Returns the color associated with the student's gender.
   Color get genderColor {
     switch (gender.toLowerCase()) {
       case 'male':
@@ -152,6 +161,7 @@ class Student {
     }
   }
 
+  /// Returns the year the student joined based on user creation date.
   int? get joinedYear {
     if (user?.createdAt != null) {
       try {
@@ -160,7 +170,6 @@ class Student {
           return date.year;
         }
       } catch (e) {
-        print('Error parsing joined year: $e');
         return null;
       }
     }

@@ -29,17 +29,24 @@ class _AcademicWorldScreenState extends State<AcademicWorldScreen> {
   String? _selectedCountry;
   int? _selectedStudentType;
 
-  // Países con sus códigos de bandera (emoji)
   final Map<String, String> _countries = {
-    'Peru': '🇵🇪',
+    'Perú': '🇵🇪',
+    'México': '🇲🇽',
+    'Canada': '🇨🇦',
+    'United States': '🇺🇸',
+    'Spain': '🇪🇸',
     'Argentina': '🇦🇷',
-    'Brazil': '🇧🇷',
     'Chile': '🇨🇱',
     'Colombia': '🇨🇴',
-    'Ecuador': '🇪🇨',
-    'Mexico': '🇲🇽',
-    'Spain': '🇪🇸',
-    'United States': '🇺🇸',
+    'Brazil': '🇧🇷',
+    'United Kingdom': '🇬🇧',
+    'France': '🇫🇷',
+    'Germany': '🇩🇪',
+    'Italy': '🇮🇹',
+    'Japan': '🇯🇵',
+    'China': '🇨🇳',
+    'India': '🇮🇳',
+    'Australia': '🇦🇺',
   };
 
   final List<Map<String, dynamic>> _studentTypes = [
