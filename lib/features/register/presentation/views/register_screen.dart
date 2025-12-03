@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:skillshare/core/themes/app_theme.dart';
 import 'package:skillshare/features/auth/presentation/views/login_screen.dart';
 import 'package:skillshare/features/register/presentation/views/welcome_registration_screen.dart';
-import 'package:skillshare/i18n/app_localizations.dart';
+import 'package:skillshare/features/register/presentation/widgets/terms_and_conditions_modal.dart';
+import 'package:skillshare/features/register/presentation/widgets/privacy_policy_modal.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -20,7 +21,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _obscurePassword = true;
   bool _obscureRepeatPassword = true;
   bool _isLoading = false;
+  bool _acceptedTerms = false;
 
+  // Validation methods
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please enter your email';
@@ -61,6 +64,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please accept the Terms and Conditions'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -79,6 +92,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
+  void _showTermsAndConditions() {
+    showDialog(
+      context: context,
+      builder: (context) => const TermsAndConditionsModal(),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showDialog(
+      context: context,
+      builder: (context) => const PrivacyPolicyModal(),
     );
   }
 
@@ -114,7 +141,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _buildPasswordField(),
                   const SizedBox(height: 20),
                   _buildRepeatPasswordField(),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 20),
+                  _buildTermsAndConditions(),
+                  const SizedBox(height: 16),
                   _buildSignUpButton(),
                   const SizedBox(height: 40),
                 ],
@@ -300,6 +329,73 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildTermsAndConditions() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          value: _acceptedTerms,
+          onChanged: (value) {
+            setState(() {
+              _acceptedTerms = value ?? false;
+            });
+          },
+          activeColor: AppTheme.highlightedElement,
+          checkColor: Colors.white,
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textGeneral,
+                  fontFamily: 'Sarabun',
+                  height: 1.4,
+                ),
+                children: [
+                  const TextSpan(
+                    text: 'I accept the ',
+                  ),
+                  WidgetSpan(
+                    child: GestureDetector(
+                      onTap: _showTermsAndConditions,
+                      child: Text(
+                        'Terms and Conditions',
+                        style: TextStyle(
+                          color: AppTheme.highlightedElement,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const TextSpan(
+                    text: ' and acknowledge the ',
+                  ),
+                  WidgetSpan(
+                    child: GestureDetector(
+                      onTap: _showPrivacyPolicy,
+                      child: Text(
+                        'Privacy Policy',
+                        style: TextStyle(
+                          color: AppTheme.highlightedElement,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

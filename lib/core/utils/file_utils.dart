@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
@@ -35,6 +36,8 @@ class FileUtils {
       '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       '.xls': 'application/vnd.ms-excel',
       '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       '.txt': 'text/plain',
       '.zip': 'application/zip',
       '.rar': 'application/x-rar-compressed',
@@ -61,34 +64,66 @@ class FileUtils {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  /// Gets appropriate icon for file type
-  static String getFileIcon(String fileName) {
+  /// Gets file type category
+  static String getFileTypeCategory(String fileName) {
     final extension = path.extension(fileName).toLowerCase();
 
     switch (extension) {
       case '.pdf':
-        return '📄';
+        return 'pdf';
       case '.doc':
       case '.docx':
-        return '📝';
+        return 'document';
       case '.xls':
       case '.xlsx':
-        return '📊';
-      case '.zip':
-      case '.rar':
-      case '.7z':
-        return '🗜️';
-      case '.mp3':
-      case '.wav':
-      case '.m4a':
-        return '🎵';
+        return 'spreadsheet';
+      case '.ppt':
+      case '.pptx':
+        return 'presentation';
       case '.jpg':
       case '.jpeg':
       case '.png':
       case '.gif':
-        return '🖼️';
+      case '.bmp':
+      case '.webp':
+        return 'image';
       default:
-        return '📎';
+        return 'other';
     }
+  }
+
+  /// Validates if file is supported
+  static bool isSupportedFile(String fileName) {
+    final extension = path.extension(fileName).toLowerCase();
+    final supportedExtensions = [
+      '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+      '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp',
+      '.txt', '.zip', '.rar'
+    ];
+    return supportedExtensions.contains(extension);
+  }
+
+  /// Gets appropriate color for file type
+  static Color getFileTypeColor(String fileType) {
+    return switch (fileType.toLowerCase()) {
+      'pdf' => const Color(0xFFE74C3C),
+      'doc' || 'docx' || 'document' => const Color(0xFF2B579A),
+      'xls' || 'xlsx' || 'spreadsheet' => const Color(0xFF217346),
+      'ppt' || 'pptx' || 'presentation' => const Color(0xFFD24726),
+      'jpg' || 'jpeg' || 'png' || 'gif' || 'bmp' || 'image' => const Color(0xFFE67E22),
+      _ => const Color(0xFF95A5A6),
+    };
+  }
+
+  /// Gets appropriate icon for file type
+  static IconData getFileTypeIcon(String fileType) {
+    return switch (fileType.toLowerCase()) {
+      'pdf' => Icons.picture_as_pdf,
+      'doc' || 'docx' || 'document' => Icons.description,
+      'xls' || 'xlsx' || 'spreadsheet' => Icons.table_chart,
+      'ppt' || 'pptx' || 'presentation' => Icons.slideshow,
+      'jpg' || 'jpeg' || 'png' || 'gif' || 'bmp' || 'image' => Icons.image,
+      _ => Icons.insert_drive_file,
+    };
   }
 }

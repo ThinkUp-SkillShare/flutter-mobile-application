@@ -1,25 +1,23 @@
 import 'package:dio/dio.dart';
 import 'package:skillshare/core/constants/api_constants.dart';
 
-// Interfaz
+/// Interface for student remote data operations
 abstract class StudentRemoteDataSource {
   Future<Map<String, dynamic>> createStudent(Map<String, dynamic> studentData);
   Future<Map<String, dynamic>> getStudentByUserId(int userId);
   Future<Map<String, dynamic>> updateStudent(int id, Map<String, dynamic> studentData);
 }
 
-// Implementación
+/// Implementation of StudentRemoteDataSource using Dio for HTTP requests
 class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
   final Dio dio;
 
   StudentRemoteDataSourceImpl({required this.dio});
 
+  /// Creates a new student profile
   @override
   Future<Map<String, dynamic>> createStudent(Map<String, dynamic> studentData) async {
     try {
-      print('🎓 Creating student profile...');
-      print('📊 Student data: $studentData');
-
       final response = await dio.post(
         ApiConstants.studentBase,
         data: studentData,
@@ -29,9 +27,6 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         ),
       );
 
-      print('✅ Student creation response: ${response.statusCode}');
-      print('📦 Response data: ${response.data}');
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data as Map<String, dynamic>;
       } else {
@@ -39,19 +34,16 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         throw Exception(errorMsg);
       }
     } on DioException catch (e) {
-      print('💥 DioException creating student: ${e.message}');
       if (e.response != null) {
-        print('💥 Response status: ${e.response?.statusCode}');
-        print('💥 Response data: ${e.response?.data}');
         throw Exception(e.response?.data['message'] ?? 'Network error');
       }
       throw Exception('Network connection failed');
     } catch (e) {
-      print('💀 Unexpected error creating student: $e');
       throw Exception('An unexpected error occurred');
     }
   }
 
+  /// Retrieves a student profile by user ID
   @override
   Future<Map<String, dynamic>> getStudentByUserId(int userId) async {
     try {
@@ -77,6 +69,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
     }
   }
 
+  /// Updates an existing student profile
   @override
   Future<Map<String, dynamic>> updateStudent(int id, Map<String, dynamic> studentData) async {
     try {

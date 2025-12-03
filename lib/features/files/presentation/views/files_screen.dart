@@ -7,7 +7,6 @@ import 'package:skillshare/features/groups/services/group_service.dart';
 import 'package:skillshare/features/files/presentation/widgets/upload_document_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../../auth/application/auth_service.dart';
 import '../../../../core/constants/api_constants.dart';

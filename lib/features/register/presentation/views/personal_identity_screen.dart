@@ -5,11 +5,11 @@ import 'package:get_it/get_it.dart';
 import 'package:skillshare/features/auth/domain/entities/user_entity.dart';
 import 'package:dio/dio.dart';
 import 'package:skillshare/core/constants/api_constants.dart';
+import 'package:skillshare/features/auth/application/auth_service.dart';
+import 'package:skillshare/features/auth/domain/use_cases/login_use_case.dart';
+import 'package:skillshare/features/auth/domain/use_cases/register_use_case.dart';
 
-import '../../../auth/application/auth_service.dart';
-import '../../../auth/domain/use_cases/login_use_case.dart';
-import '../../../auth/domain/use_cases/register_use_case.dart';
-
+/// Screen for collecting personal identity information during registration
 class PersonalIdentityScreen extends StatefulWidget {
   final String email;
   final String password;
@@ -49,9 +49,10 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
     {'value': 'female', 'icon': Icons.female, 'label': 'Female'},
   ];
 
+  /// Validates nickname input (optional field)
   String? _validateNickname(String? value) {
     if (value == null || value.isEmpty) {
-      return null; // Nickname es opcional
+      return null; // Nickname is optional
     }
     if (value.length < 3) {
       return 'Nickname must be at least 3 characters';
@@ -59,6 +60,7 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
     return null;
   }
 
+  /// Handles the continue button press to complete registration
   void _continue() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -79,7 +81,7 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
     });
 
     try {
-      // 1️⃣ Registrar el usuario en Auth system
+      // 1. Register the user in Auth system
       final registerUseCase = GetIt.instance<RegisterUseCase>();
       final userEntity = UserEntity(
         email: widget.email,
@@ -87,17 +89,16 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
       );
       final registeredUser = await registerUseCase.execute(userEntity);
 
-      // 2️⃣ 🔥 NUEVO: Iniciar sesión automáticamente después del registro
+      // 2. Automatically log in after registration
       final loginUseCase = GetIt.instance<LoginUseCase>();
       final (loggedInUser, token) = await loginUseCase.execute(widget.email, widget.password);
 
-      // 3️⃣ 🔥 NUEVO: Guardar datos de sesión
+      // 3. Save session data
       if (loggedInUser.userId != null) {
         await AuthService.saveUserData(loggedInUser.userId!, loggedInUser.email, token);
-        print('✅ Usuario autenticado automáticamente: userId=${loggedInUser.userId}');
       }
 
-      // 4️⃣ Crear perfil de estudiante
+      // 4. Create student profile
       final studentData = {
         'firstName': widget.firstName,
         'lastName': widget.lastName,
@@ -109,7 +110,7 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
         'educationalCenter': widget.educationalCenter,
         'gender': _selectedGender,
         'userType': widget.studentType,
-        'userId': registeredUser.userId ?? loggedInUser.userId, // Usar ID del usuario logueado
+        'userId': registeredUser.userId ?? loggedInUser.userId, // Use logged-in user ID
       };
 
       await _createStudent(studentData);
@@ -144,11 +145,10 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
     }
   }
 
+  /// Creates a student profile via API
   Future<void> _createStudent(Map<String, dynamic> studentData) async {
     try {
       final dio = GetIt.instance<Dio>();
-
-      print('🎓 Creating student with data: $studentData');
 
       final response = await dio.post(
         ApiConstants.studentBase,
@@ -159,14 +159,10 @@ class _PersonalIdentityScreenState extends State<PersonalIdentityScreen> {
         ),
       );
 
-      print('✅ Student created: ${response.statusCode}');
-      print('📦 Response: ${response.data}');
-
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception(response.data['message'] ?? 'Failed to create student');
       }
     } catch (e) {
-      print('💥 Error creating student: $e');
       rethrow;
     }
   }
