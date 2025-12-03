@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:record/record.dart';
+import '../../../../../core/constants/api_constants.dart';
 import '../../../../auth/application/auth_service.dart';
 import '../../../services/chat/audio_player_service.dart';
 import '../../../services/chat/chat_service.dart';
@@ -74,13 +75,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     try {
       // Remover listeners antiguos primero
-      ChatWebSocketService.removeMessageListener(widget.groupId, _handleNewMessage);
+      ChatWebSocketService.removeMessageListener(
+        widget.groupId,
+        _handleNewMessage,
+      );
 
       // Conectar WebSocket
       ChatWebSocketService.connect(widget.groupId, token);
 
       // Agregar listeners
-      ChatWebSocketService.addMessageListener(widget.groupId, _handleNewMessage);
+      ChatWebSocketService.addMessageListener(
+        widget.groupId,
+        _handleNewMessage,
+      );
 
       ChatWebSocketService.addConnectionListener(widget.groupId, () {
         print('✅ WebSocket connected for group ${widget.groupId}');
@@ -120,7 +127,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           );
         }
       });
-
     } catch (e) {
       print('❌ WebSocket Connection Error: $e');
       if (mounted) {
@@ -137,7 +143,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void _handleNewMessage(ChatMessage message) {
     if (!mounted) return;
 
-    print('🆕 WebSocket - New message received: ${message.id}, Type: ${message.messageType}');
+    print(
+      '🆕 WebSocket - New message received: ${message.id}, Type: ${message.messageType}',
+    );
 
     setState(() {
       // Verificar si el mensaje ya existe
@@ -749,13 +757,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                               : null,
                           onImageTap: () {
                             if (message.fileUrl != null) {
-                              String imageUrl;
-                              if (message.fileUrl!.startsWith('data:')) {
-                                imageUrl = message.fileUrl!;
-                              } else {
-                                imageUrl =
-                                    'http://192.168.0.206:5118/uploads/images/${message.fileUrl!}';
-                              }
+                              String imageUrl = ApiConstants.buildFileUrl(
+                                message.fileUrl!,
+                              );
                               _showImagePreview(imageUrl);
                             }
                           },

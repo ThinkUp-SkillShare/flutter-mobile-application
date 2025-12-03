@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
+import '../../../../../core/constants/api_constants.dart';
 import '../../../domain/models/chat_message.dart';
 import '../../../services/chat/audio_player_service.dart';
 
@@ -68,10 +69,10 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     });
 
     _audioService.setPositionListener((
-      String audioUrl,
-      Duration position,
-      Duration duration,
-    ) {
+        String audioUrl,
+        Duration position,
+        Duration duration,
+        ) {
       if (mounted && audioUrl == myAudioUrl) {
         setState(() {
           _audioPosition = position;
@@ -107,12 +108,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       return '';
     }
 
-    if (widget.message.fileUrl!.startsWith('http') ||
-        widget.message.fileUrl!.startsWith('data:')) {
-      return widget.message.fileUrl!;
-    }
-
-    return 'http://192.168.0.206:5118/uploads/audio/${widget.message.fileUrl!}';
+    return ApiConstants.buildAudioUrl(widget.message.fileUrl);
   }
 
   void _toggleAudioPlayback() async {
@@ -184,7 +180,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
               padding: const EdgeInsets.only(left: 12, bottom: 4),
               child: Text(
                 widget.message.userEmail.split('@')[0],
-                // Mostrar solo nombre antes del @
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -223,7 +218,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
               ),
             ),
           ),
-          // Timestamp row...
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
             child: Row(
@@ -361,7 +355,8 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         fit: BoxFit.cover,
       );
     } else {
-      final imageUrl = 'http://192.168.0.206:5118/uploads/images/$fileUrl';
+      // USAR LA CONSTANTE CENTRALIZADA
+      final imageUrl = ApiConstants.buildFileUrl(fileUrl);
       return Image.network(
         imageUrl,
         width: 250,
@@ -378,7 +373,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   }
 
   Widget _buildAudioMessage(bool isMe) {
-    // Usar la duración real del audio si está disponible, sino usar la del mensaje
     final durationSeconds = _audioDuration.inSeconds > 0
         ? _audioDuration.inSeconds.toDouble()
         : (widget.message.duration ?? 0).toDouble();
@@ -391,9 +385,9 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
 
     print(
       '🎵 BUILDING AUDIO MESSAGE - '
-      'Playing: $_isAudioPlaying, '
-      'Position: $positionSeconds, '
-      'Duration: $durationSeconds',
+          'Playing: $_isAudioPlaying, '
+          'Position: $positionSeconds, '
+          'Duration: $durationSeconds',
     );
 
     return Container(
@@ -401,7 +395,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          // Botón de play/pause
           GestureDetector(
             onTap: _toggleAudioPlayback,
             child: AnimatedContainer(
@@ -426,12 +419,10 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
 
           const SizedBox(width: 12),
 
-          // Barra de progreso y tiempos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Barra de progreso
                 SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     thumbShape: const RoundSliderThumbShape(
@@ -457,13 +448,11 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                   ),
                 ),
 
-                // Tiempos
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Tiempo transcurrido
                       Text(
                         _formatDuration(_audioPosition.inSeconds),
                         style: TextStyle(
@@ -472,7 +461,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                         ),
                       ),
 
-                      // Duración total
                       Text(
                         _formatDuration(durationSeconds.toInt()),
                         style: TextStyle(
@@ -738,16 +726,4 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     }
   }
 
-  String _getMessageTypeLabel(String type) {
-    switch (type) {
-      case 'image':
-        return '📷 Image';
-      case 'audio':
-        return '🎤 Audio';
-      case 'file':
-        return '📎 File';
-      default:
-        return 'Message';
-    }
-  }
 }
