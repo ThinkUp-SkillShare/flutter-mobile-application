@@ -39,13 +39,22 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
+  bool _hasText = false;
   ChatMessage? _replyingTo;
   ChatMessage? _editingMessage;
 
   @override
   void initState() {
     super.initState();
-    _initializeChat();
+
+    _messageController.addListener(() {
+      final hasTextNow = _messageController.text.trim().isNotEmpty;
+      if (hasTextNow != _hasText) {
+        setState(() {
+          _hasText = hasTextNow;
+        });
+      }
+    });
   }
 
   @override
@@ -204,7 +213,32 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
 
     if (message != null) {
-      setState(() => _messages.add(message));
+      final userId = await AuthService.getUserId();
+
+      final chatMessageWithSender = ChatMessage(
+        id: message.id,
+        groupId: message.groupId,
+        userId: message.userId,
+        userEmail: message.userEmail,
+        userProfileImage: message.userProfileImage,
+        messageType: message.messageType,
+        content: message.content,
+        fileUrl: message.fileUrl,
+        fileName: message.fileName,
+        fileSize: message.fileSize,
+        duration: message.duration,
+        replyToMessageId: message.replyToMessageId,
+        replyToMessage: message.replyToMessage,
+        isEdited: message.isEdited,
+        isDeleted: message.isDeleted,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        reactions: message.reactions,
+        isRead: message.isRead,
+        isSentByCurrentUser: userId != null && message.userId == userId,
+      );
+
+      setState(() => _messages.add(chatMessageWithSender));
       _scrollToBottom();
     }
   }
