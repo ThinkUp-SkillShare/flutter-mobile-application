@@ -58,7 +58,7 @@ class FeaturedGroupCard extends StatelessWidget {
         /// Fallback image ensures UI stability if backend sends null.
         image: DecorationImage(
           image: NetworkImage(
-            group['coverImage'] ?? 'https://via.placeholder.com/280x120',
+            group['coverImage'] ?? 'https://i.pinimg.com/originals/79/28/79/7928798bbdeda1d1cb82adb1f14e99cf.gif',
           ),
           fit: BoxFit.cover,
         ),

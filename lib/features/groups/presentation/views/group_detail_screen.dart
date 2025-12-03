@@ -281,7 +281,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
           children: [
             Image.network(
               groupDetails!['coverImage'] ??
-                  'https://via.placeholder.com/400x280',
+                  'https://i.pinimg.com/originals/45/c1/fc/45c1fcf4aaae94a8ab0015e186070d22.gif',
               fit: BoxFit.cover,
             ),
             Container(
