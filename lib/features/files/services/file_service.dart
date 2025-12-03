@@ -122,8 +122,8 @@ class FileService {
 
   static Future<Map<String, dynamic>> downloadDocument(int documentId, String token) async {
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConstants.documentBase}/$documentId/download'),
+      final response = await http.get(
+        Uri.parse('${ApiConstants.documentBase}/$documentId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -131,33 +131,31 @@ class FileService {
       );
 
       if (response.statusCode == 200) {
-        // Verificar si la respuesta es JSON o un archivo binario
-        final contentType = response.headers['content-type'];
+        final document = json.decode(response.body) as Map<String, dynamic>;
+        final fileUrl = document['fileUrl'] as String;
 
-        if (contentType?.contains('application/json') == true) {
-          // Es JSON (probablemente una URL externa)
-          return json.decode(response.body) as Map<String, dynamic>;
-        } else {
-          // Es un archivo binario (descarga directa)
-          // El backend está sirviendo el archivo directamente
-          // Extraer información de los headers
-          final fileName = response.headers['content-disposition']?.split('filename=').last.replaceAll('"', '')
-              ?? 'document_$documentId';
+        final downloadResponse = await http.get(Uri.parse(fileUrl));
 
-          // Guardar archivo temporalmente
+        if (downloadResponse.statusCode == 200) {
+          final fileName = document['fileName'] as String? ?? 'document_$documentId';
+
           final directory = await getTemporaryDirectory();
           final filePath = '${directory.path}/$fileName';
           final file = File(filePath);
-          await file.writeAsBytes(response.bodyBytes);
+
+          await file.writeAsBytes(downloadResponse.bodyBytes);
 
           return {
             'filePath': filePath,
             'fileName': fileName,
             'isLocalFile': true,
+            'fileUrl': fileUrl,
           };
+        } else {
+          throw Exception('Failed to download from Firebase: ${downloadResponse.statusCode}');
         }
       } else {
-        throw Exception('Failed to download document: ${response.statusCode}');
+        throw Exception('Failed to get document info: ${response.statusCode}');
       }
     } catch (e) {
       print('Error downloading document: $e');

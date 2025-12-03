@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,26 +18,28 @@ import 'features/groups/services/chat/audio_player_service.dart';
 import 'features/home/presentation/view_models/home_view_model.dart';
 import 'features/search/presentation/view_models/search_view_model.dart';
 import 'features/search/presentation/views/search_screen.dart';
+import 'firebase_options.dart';
 
 /// Main entry point of the application
 /// Initializes dependencies, sets up providers, and configures the app
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set system UI to immersive mode for full screen experience
+  if (Firebase.apps.where((app) => app.name == 'Secondary').isEmpty) {
+    await Firebase.initializeApp(
+      name: 'Secondary',
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
-  // Initialize dependency injection
   setupDependencies();
-
-  // Initialize audio player service (singleton auto-initializes)
-  // No need to call init() anymore as it's done in the constructor
   AudioPlayerService();
 
   runApp(
     MultiProvider(
       providers: [
-        // Application state providers
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
@@ -45,7 +48,10 @@ void main() {
       child: const SkillShareApp(),
     ),
   );
+
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 }
+
 
 /// Root widget of the SkillShare application
 class SkillShareApp extends StatelessWidget {
@@ -99,8 +105,20 @@ class SkillShareApp extends StatelessWidget {
           return Scaffold(
             backgroundColor: AppTheme.backgroundPrimary,
             body: Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.highlightedElement,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Spinner de Firebase
+                  CircularProgressIndicator(color: AppTheme.highlightedElement),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Initializing Firebase...',
+                    style: TextStyle(
+                      color: AppTheme.importancePrimary,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -130,11 +148,7 @@ class SkillShareApp extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppTheme.errorColor,
-            ),
+            Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
             const SizedBox(height: 16),
             Text(
               'Authentication Error',

@@ -1,155 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../auth/application/auth_service.dart';
-import '../../../settings/presentation/views/settings_screen.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../services/student_service.dart';
+import '../../../groups/services/group_service.dart';
 import '../widgets/group_card_widget.dart';
 import '../widgets/profile_stats_widget.dart';
-import 'all_user_groups_screen.dart';
-import 'edit_profile_screen.dart';
-import '../../../groups/services/group_service.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class ViewProfileScreen extends StatefulWidget {
+  final int userId;
+
+  const ViewProfileScreen({super.key, required this.userId});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ViewProfileScreen> createState() => _ViewProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ViewProfileScreenState extends State<ViewProfileScreen> {
   final StudentService _studentService = StudentService();
+
   Student? _student;
   bool _isLoading = true;
   List<Map<String, dynamic>> _userGroups = [];
   int _createdGroupsCount = 0;
   int _joinedGroupsCount = 0;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _loadStudentData();
+    _loadUserProfile();
   }
 
-  Future<void> _loadStudentData() async {
+  Future<void> _loadUserProfile() async {
     try {
-      final int? userId = await AuthService.getUserId();
+      final student = await _studentService.getStudentByUserId(widget.userId);
+
       final String? token = await AuthService.getAuthToken();
 
-      print('🔍 DEBUG - UserId from AuthService: $userId');
+      if (token != null && student != null) {
+        final userGroups = await GroupService.getUserGroups(widget.userId, token);
 
-      if (userId == null || token == null) {
-        print('❌ No authenticated user found');
-        setState(() {
-          _isLoading = false;
-          _student = null;
-        });
-        return;
-      }
+        int createdCount = 0;
+        int joinedCount = 0;
 
-      print('👤 Loading student data for userId: $userId');
-      final student = await _studentService.getStudentByUserId(userId);
-
-      print('📊 DEBUG - Student data received: $student');
-
-      // Cargar grupos del usuario
-      final userGroups = await GroupService.getUserGroups(userId, token);
-      print('📊 DEBUG - User groups loaded: ${userGroups.length}');
-
-      // Contar grupos creados vs unidos
-      int createdCount = 0;
-      int joinedCount = 0;
-
-      for (var group in userGroups) {
-        print('📊 DEBUG - Group: ${group['name']}, created_by: ${group['created_by']}, userId: $userId');
-        if (group['created_by'] == userId) {
-          createdCount++;
-        } else {
-          joinedCount++;
+        for (var group in userGroups) {
+          if (group['created_by'] == widget.userId) {
+            createdCount++;
+          } else {
+            joinedCount++;
+          }
         }
-      }
 
-      print('📊 DEBUG - Created groups: $createdCount, Joined groups: $joinedCount');
-
-      setState(() {
-        _student = student;
-        _userGroups = userGroups;
-        _createdGroupsCount = createdCount;
-        _joinedGroupsCount = joinedCount;
-        _isLoading = false;
-      });
-
-      if (student == null) {
-        print('⚠️ No student profile found for user $userId');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('No student profile found. Please complete your profile.'),
-            backgroundColor: Colors.orange.shade700,
-          ),
-        );
+        setState(() {
+          _student = student;
+          _userGroups = userGroups;
+          _createdGroupsCount = createdCount;
+          _joinedGroupsCount = joinedCount;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _student = student;
+          _isLoading = false;
+        });
       }
 
     } catch (e) {
-      print('❌ Error loading student data: $e');
+      print('❌ Error loading user profile: $e');
       setState(() {
         _isLoading = false;
-        _student = null;
-        _userGroups = [];
-        _createdGroupsCount = 0;
-        _joinedGroupsCount = 0;
+        _errorMessage = 'Error al cargar el perfil';
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error loading profile: $e'),
-          backgroundColor: Colors.red.shade700,
-        ),
-      );
     }
-  }
-
-  void _copyUsername() {
-    final username = _student?.nickname ?? 'user';
-    Clipboard.setData(ClipboardData(text: '@$username'));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Usuario @$username copiado al portapapeles'),
-        duration: const Duration(seconds: 2),
-        backgroundColor: Colors.green.shade700,
-      ),
-    );
-  }
-
-  void _navigateToEditProfile() {
-    if (_student == null) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfileScreen(
-          student: _student!,
-          onSave: (updatedStudent) {
-            setState(() {
-              _student = updatedStudent;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  void _navigateToAllGroups() {
-    if (_userGroups.isEmpty) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AllUserGroupsScreen(
-          userGroups: _userGroups,
-          userId: _student?.userId ?? 0,
-        ),
-      ),
-    );
   }
 
   Widget _buildProfileInfo() {
@@ -225,23 +147,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : _buildDefaultAvatar(),
               ),
             ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: _student!.genderColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: Icon(
-                  _student!.genderIcon,
-                  color: Colors.white,
-                  size: 16,
+            if (_student!.genderIcon != null)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: _student!.genderColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Icon(
+                    _student!.genderIcon,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -255,7 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 8),
 
-        if (_student!.educationalCenter != null) ...[
+        if (_student!.educationalCenter != null && _student!.educationalCenter!.isNotEmpty) ...[
           Text(
             _student!.educationalCenter!,
             style: TextStyle(
@@ -279,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 12),
             ],
-            if (_student!.country != null) ...[
+            if (_student!.country != null && _student!.country!.isNotEmpty) ...[
               Text(
                 _student!.countryFlag,
                 style: const TextStyle(fontSize: 14),
@@ -294,12 +217,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
 
         const SizedBox(height: 4),
+        // Usar createdAt del UserEntity
         Text(
-          'Joined ${_student?.joinedYear ?? 2025}',
+          _student!.user?.createdAt != null
+              ? 'Miembro desde ${_getJoinedYear(_student!.user!.createdAt!)}'
+              : 'Usuario',
           style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+        ),
+
+        // Nombre de usuario SIN botón de copiar
+        const SizedBox(height: 8),
+        Text(
+          '@${_student!.nickname}',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
+  }
+
+  String _getJoinedYear(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.year}';
+    } catch (e) {
+      return '2025';
+    }
   }
 
   Widget _buildDefaultAvatar() {
@@ -343,26 +289,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No perteneces a ningún grupo',
+              'No pertenece a ningún grupo',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Únete a grupos para empezar a colaborar',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       );
     }
+
+    // Mostrar solo 3 grupos como en la pantalla principal
+    final displayGroups = _userGroups.length > 3 ? _userGroups.sublist(0, 3) : _userGroups;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,23 +313,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Mis Grupos (${_userGroups.length})',
+                'Grupos (${_userGroups.length})',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                   color: Colors.black87,
                 ),
               ),
-              TextButton(
-                onPressed: _navigateToAllGroups,
-                child: const Text(
-                  'Ver todos',
+              if (_userGroups.length > 3)
+                Text(
+                  '${_userGroups.length - 3} más',
                   style: TextStyle(
-                    color: Color(0xFF0F4C75),
-                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -399,10 +337,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: ListView.builder(
             padding: const EdgeInsets.only(left: 20, right: 8),
             scrollDirection: Axis.horizontal,
-            itemCount: _userGroups.length > 3 ? 3 : _userGroups.length,
+            itemCount: displayGroups.length,
             itemBuilder: (context, index) {
-              final group = _userGroups[index];
-              final isCreator = group['created_by'] == _student?.userId;
+              final group = displayGroups[index];
+              final isCreator = group['created_by'] == widget.userId;
 
               String imageUrl = '';
               if (group['coverImage'] != null && group['coverImage'].toString().isNotEmpty) {
@@ -426,61 +364,169 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildAdditionalInfo() {
+    if (_student == null) return Container();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Información',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Construir lista dinámica de widgets de información
+          ..._buildInfoWidgets(),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildInfoWidgets() {
+    final List<Widget> infoWidgets = [];
+
+    // Email del usuario (si está disponible)
+    if (_student!.user?.email != null && _student!.user!.email!.isNotEmpty) {
+      infoWidgets.add(_buildInfoRow('Email', _student!.user!.email!));
+    }
+
+    // Centro educativo
+    if (_student!.educationalCenter != null && _student!.educationalCenter!.isNotEmpty) {
+      if (infoWidgets.isNotEmpty) infoWidgets.add(const SizedBox(height: 12));
+      infoWidgets.add(_buildInfoRow('Centro educativo', _student!.educationalCenter!));
+    }
+
+    // País
+    if (_student!.country != null && _student!.country!.isNotEmpty) {
+      if (infoWidgets.isNotEmpty) infoWidgets.add(const SizedBox(height: 12));
+      infoWidgets.add(_buildInfoRow('País', _student!.country!));
+    }
+
+    // Edad
+    if (_student!.age != null) {
+      if (infoWidgets.isNotEmpty) infoWidgets.add(const SizedBox(height: 12));
+      infoWidgets.add(_buildInfoRow('Edad', '${_student!.age} años'));
+    }
+
+    // Género
+    if (_student!.gender != null && _student!.gender!.isNotEmpty) {
+      if (infoWidgets.isNotEmpty) infoWidgets.add(const SizedBox(height: 12));
+      final genderText = _student!.gender == 'male' ? 'Masculino' :
+      _student!.gender == 'female' ? 'Femenino' : _student!.gender!;
+      infoWidgets.add(_buildInfoRow('Género', genderText));
+    }
+
+    // Fecha de creación (desde UserEntity)
+    if (_student!.user?.createdAt != null) {
+      if (infoWidgets.isNotEmpty) infoWidgets.add(const SizedBox(height: 12));
+      infoWidgets.add(_buildInfoRow('Miembro desde', _formatDate(_student!.user!.createdAt!)));
+    }
+
+    // Si no hay información adicional
+    if (infoWidgets.isEmpty) {
+      infoWidgets.add(
+        Text(
+          'No hay información adicional disponible',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    return infoWidgets;
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            '$label:',
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
-        elevation: 0,
-        surfaceTintColor: const Color(0xFFFAFAFA),
-        backgroundColor: const Color(0xFFFAFAFA),
+        title: const Text('Perfil'),
         leading: IconButton(
-          onPressed: _student != null ? _navigateToEditProfile : null,
-          icon: const Icon(Icons.edit_outlined, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
-        title: GestureDetector(
-          onTap: _copyUsername,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '@${_student?.nickname ?? 'username'}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.copy,
-                size: 16,
-                color: Colors.grey,
-              ),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-            icon: const Icon(Icons.settings, color: Colors.black87),
-          ),
-        ],
       ),
       body: _isLoading
-          ? const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F4C75)),
+          ? const Center(child: CircularProgressIndicator())
+          : _student == null
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.person_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage.isNotEmpty ? _errorMessage : 'Perfil no encontrado',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       )
           : RefreshIndicator(
-        onRefresh: _loadStudentData,
+        onRefresh: _loadUserProfile,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -499,8 +545,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 32),
 
-              // Sección de grupos
-              _buildGroupsSection(),
+              if (_userGroups.isNotEmpty) ...[
+                _buildGroupsSection(),
+                const SizedBox(height: 32),
+              ],
+
+              _buildAdditionalInfo(),
 
               const SizedBox(height: 32),
             ],

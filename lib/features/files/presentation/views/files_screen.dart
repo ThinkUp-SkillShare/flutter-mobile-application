@@ -449,27 +449,27 @@ class _MyFilesScreenState extends State<MyFilesScreen>
       final token = await AuthService.getAuthToken();
       if (token == null) return;
 
-      final downloadResult = await FileService.downloadDocument(file['id'], token);
+      // Verificar si el archivo tiene URL de Firebase Storage
+      final fileUrl = file['fileUrl'] as String?;
 
-      if (downloadResult['fileUrl'] != null) {
-        final fileUrl = downloadResult['fileUrl'] as String;
+      if (fileUrl != null && fileUrl.contains('firebasestorage.googleapis.com')) {
+        // Es una URL de Firebase Storage - usar directamente
+        final result = await OpenFile.open(fileUrl);
 
-        if (fileUrl.startsWith('/uploads/')) {
-          final fullUrl = '${ApiConstants.baseUrl}${fileUrl.replaceFirst('/', '')}';
-
-          // Usar OpenFile para abrir el archivo
-          await OpenFile.open(fullUrl);
+        if (result.type == ResultType.done) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Archivo abierto exitosamente'),
+              backgroundColor: Color(0xFF27AE60),
+            ),
+          );
         } else {
-          // Para URLs externas
-          await OpenFile.open(fileUrl);
+          // Si no se puede abrir directamente, descargar primero
+          await _downloadAndOpenFile(file, token);
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Abriendo archivo...'),
-            backgroundColor: Color(0xFF27AE60),
-          ),
-        );
+      } else {
+        // Usar el endpoint de descarga tradicional
+        await _downloadAndOpenFile(file, token);
       }
     } catch (e) {
       print('Error opening file: $e');
@@ -479,6 +479,26 @@ class _MyFilesScreenState extends State<MyFilesScreen>
           backgroundColor: const Color(0xFFE74C3C),
         ),
       );
+    }
+  }
+
+  Future<void> _downloadAndOpenFile(Map<String, dynamic> file, String token) async {
+    try {
+      final downloadResult = await FileService.downloadDocument(file['id'], token);
+
+      if (downloadResult['filePath'] != null) {
+        final filePath = downloadResult['filePath'] as String;
+        await OpenFile.open(filePath);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Archivo descargado y abierto'),
+            backgroundColor: Color(0xFF27AE60),
+          ),
+        );
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 

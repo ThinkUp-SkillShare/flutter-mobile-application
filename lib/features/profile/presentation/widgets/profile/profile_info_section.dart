@@ -5,7 +5,7 @@ import '../../../domain/entities/student_entity.dart';
 class ProfileInfoSection extends StatelessWidget {
   final Student? student;
 
-  const ProfileInfoSection({super.key, required this.student});
+  const ProfileInfoSection({super.key, required this.student, required bool isReadOnly});
 
   @override
   Widget build(BuildContext context) {

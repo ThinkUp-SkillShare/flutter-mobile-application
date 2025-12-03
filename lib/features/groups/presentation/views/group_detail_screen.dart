@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../auth/application/auth_service.dart';
+import '../../../profile/presentation/views/view_profile_screen.dart';
 import '../../services/group_service.dart';
 import '../widgets/video_call/calls_section_widget.dart';
 import 'chat/group_chat_screen.dart';
@@ -569,10 +570,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     );
   }
 
-  // Eliminada la función _buildQuizSection()
-
-  // OTHER FEATURES
-
   void _showMembers() {
     showModalBottomSheet(
       context: context,
@@ -639,6 +636,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
               ),
             ),
             const Divider(height: 1),
+            // En el método _showMembers(), modifica el ListView.builder:
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(20),
@@ -646,81 +644,102 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                 itemBuilder: (context, index) {
                   final member = members[index];
                   final isAdmin = member['role'] == 'admin';
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFAFAFA),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isAdmin
-                            ? const Color(0xFF324779).withOpacity(0.3)
-                            : Colors.transparent,
-                        width: 1.5,
+                  // Extraer el userId del miembro - ajusta según tu estructura de datos
+                  final int? memberUserId = member['userId'] != null
+                      ? int.tryParse(member['userId'].toString())
+                      : null;
+
+                  return InkWell(
+                    onTap: () {
+                      if (memberUserId != null) {
+                        Navigator.pop(context); // Cerrar el modal primero
+                        _navigateToUserProfile(memberUserId, context);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('No se puede ver el perfil de este usuario'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFAFA),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isAdmin
+                              ? const Color(0xFF324779).withOpacity(0.3)
+                              : Colors.transparent,
+                          width: 1.5,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: const Color(0xFF324779),
-                          child: Text(
-                            member['userEmail'][0].toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: const Color(0xFF324779),
+                            child: Text(
+                              member['userEmail'][0].toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                member['userEmail'],
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF333333),
-                                  fontFamily: 'Sarabun',
-                                ),
-                              ),
-                              if (isAdmin)
-                                const Text(
-                                  'Administrator',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF324779),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  member['userEmail'],
+                                  style: const TextStyle(
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w600,
+                                    color: Color(0xFF333333),
                                     fontFamily: 'Sarabun',
                                   ),
                                 ),
-                            ],
+                                if (isAdmin)
+                                  const Text(
+                                    'Administrator',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF324779),
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Sarabun',
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                        if (isAdmin)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF324779),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'ADMIN',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
+                          if (isAdmin)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF324779),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'ADMIN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -728,6 +747,15 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToUserProfile(int userId, BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ViewProfileScreen(userId: userId),
       ),
     );
   }

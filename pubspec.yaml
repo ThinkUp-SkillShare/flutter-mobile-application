@@ -27,9 +27,11 @@ dependencies:
   web_socket_channel: ^3.0.3
   photo_view: ^0.14.0
   open_file: ^3.3.3
-  firebase_storage: ^11.0.0
+  firebase_storage: ^11.5.2
   firebase_core: ^2.4.0
   firebase_auth: ^4.8.0
+  dio: ^5.3.3
+  android_path_provider: ^0.3.1
 
 dev_dependencies:
   flutter_test:
