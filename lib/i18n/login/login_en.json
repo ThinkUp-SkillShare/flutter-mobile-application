@@ -5,5 +5,7 @@
   "signIn": "Sign in",
   "dontHaveAccount": "Don't have an account?",
   "signUp": "Sign up",
-  "pleaseEnterAllFields": "Please enter all fields"
+  "pleaseEnterAllFields": "Please enter all fields",
+  "error": "Error",
+  "ok": "OK"
 }

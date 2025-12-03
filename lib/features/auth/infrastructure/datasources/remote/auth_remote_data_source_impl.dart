@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
-import '../../../../../core/constants/api_constants.dart';
+import '../../../../../../core/constants/api_constants.dart';
+import '../../../domain/exceptions/auth_exceptions.dart';
 import '../../models/user_model.dart';
 import 'auth_remote_data_source.dart';
 
@@ -48,18 +49,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           return (userModel, token);
         } else {
           final errorMsg = responseData['message'] ?? 'Login failed';
-          throw Exception(errorMsg);
+          throw LoginException(errorMsg);
         }
+      } else if (response.statusCode == 401) {
+        throw InvalidCredentialsException('Invalid email or password');
+      } else if (response.statusCode == 404) {
+        throw UserNotFoundException('Email not registered');
       } else {
-        final errorMsg = response.data['message'] ?? 'Login failed';
-        throw Exception(errorMsg);
+        throw LoginException(response.data['message'] ?? 'Login failed');
       }
     } on DioException catch (e) {
-      // Handle network or server errors
-      final errorMessage = e.response?.data['message'] ?? e.message;
-      throw Exception(errorMessage);
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw NetworkException('Connection timeout. Please check your internet connection.');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw NetworkException('No internet connection. Please check your network.');
+      } else {
+        final errorMessage = e.response?.data['message'] ?? 'Network error occurred';
+        throw LoginException(errorMessage);
+      }
     } catch (e) {
-      throw Exception('An unexpected error occurred during login');
+      if (e is LoginException || e is InvalidCredentialsException ||
+          e is UserNotFoundException || e is NetworkException) {
+        rethrow;
+      }
+      throw LoginException('An unexpected error occurred during login');
     }
   }
 
@@ -89,7 +104,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return UserModel(
           userId: responseData['userId'] ?? user.userId,
           email: user.email,
-          password: '', // Do not store password
+          password: '',
           profileImage: user.profileImage,
           createdAt: DateTime.now().toIso8601String(),
         );

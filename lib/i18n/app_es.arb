@@ -12,6 +12,8 @@
   "dontHaveAccount": "¿No tienes una cuenta?",
   "signUp": "Regístrate",
   "pleaseEnterAllFields": "Por favor ingresa todos los campos",
+  "error": "Error",
+  "ok": "Aceptar",
   "profile_joined": "Se unió en el",
   "@profile_joined": {
     "description": "Etiqueta se unió {año}"

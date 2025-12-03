@@ -39,6 +39,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseEnterAllFields => 'Please enter all fields';
 
   @override
+  String get error => 'Error';
+
+  @override
+  String get ok => 'OK';
+
+  @override
   String get profile_joined => 'Joined';
 
   @override

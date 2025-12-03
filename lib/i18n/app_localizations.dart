@@ -158,6 +158,18 @@ abstract class AppLocalizations {
   /// **'Please enter all fields'**
   String get pleaseEnterAllFields;
 
+  /// No description provided for @error.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get error;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
   /// Tag joined {year}
   ///
   /// In en, this message translates to:

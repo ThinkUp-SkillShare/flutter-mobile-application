@@ -23,7 +23,6 @@ class AuthRepositoryImpl implements AuthRepository {
       final (userModel, token) = await remoteDataSource.login(email, password);
       return (userModel.toEntity(), token);
     } catch (e) {
-      // Rethrow to allow higher layers to handle the exception
       rethrow;
     }
   }

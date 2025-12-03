@@ -17,69 +17,50 @@ class ApiConstants {
 
   // Student endpoints
   static String get studentBase => '$baseUrl/student';
-
   static String studentByUserId(int userId) => '$studentBase/user/$userId';
-
   static String studentById(int id) => '$studentBase/$id';
 
   // StudyGroup endpoints
   static String get studyGroupBase => '$baseUrl/StudyGroup';
-
   static String studyGroupsByUserId(int userId) =>
       '$studyGroupBase/user/$userId';
-
   static String recentGroups(int userId) =>
       '$studyGroupBase/recent?userId=$userId';
-
-  static String studyGroupById(int id, {int? userId}) => userId != null
-      ? '$studyGroupBase/$id?userId=$userId'
-      : '$studyGroupBase/$id';
-
+  static String studyGroupById(int id, {int? userId}) =>
+      userId != null ? '$studyGroupBase/$id?userId=$userId' : '$studyGroupBase/$id';
   static String joinGroup(int groupId) => '$studyGroupBase/$groupId/join';
-
   static String leaveGroup(int groupId) => '$studyGroupBase/$groupId/leave';
-
   static String groupMembers(int groupId) => '$studyGroupBase/$groupId/members';
 
   // Group management endpoints
   static String groupPermissions(int groupId) =>
       '$studyGroupBase/$groupId/permissions';
-
   static String groupStatistics(int groupId) =>
       '$studyGroupBase/$groupId/statistics';
 
   // Subject endpoints
   static String get subjectBase => '$baseUrl/Subject';
-
   static String subjectById(int id) => '$subjectBase/$id';
 
   // Document endpoints
   static final String documentBase = '$baseUrl/document';
-
   static String groupDocuments(int groupId) => '$documentBase/group/$groupId';
   static String userDocuments = '$documentBase/user';
   static String documentUpload = '$documentBase/upload';
-
   static String documentById(int documentId) => '$documentBase/$documentId';
-
   static String documentDownload(int documentId) =>
       '$documentBase/$documentId/download';
-
   static String documentStatisticsGroup(int groupId) =>
       '$documentBase/statistics/group/$groupId';
   static String popularSubjectsForDocuments = '$documentBase/subjects/popular';
 
   // Chat endpoints
   static String get chatBase => '$baseUrl/groups';
-
   static String chatMessages(int groupId) => '$chatBase/$groupId/chat/messages';
-
   static String chatMessage(int groupId, int messageId) =>
       '$chatBase/$groupId/chat/messages/$messageId';
-
   static String chatMessageReactions(int groupId, int messageId) =>
       '$chatBase/$groupId/chat/messages/$messageId/reactions';
-
   static String markMessageAsRead(int groupId, int messageId) =>
       '$chatBase/$groupId/chat/messages/$messageId/read';
 
@@ -89,28 +70,20 @@ class ApiConstants {
 
   // File upload endpoints
   static String get uploadBase => '$fileBaseUrl/uploads';
-
-  static String audioUploadUrl(String fileName) =>
-      '$uploadBase/audio/$fileName';
-
-  static String imageUploadUrl(String fileName) =>
-      '$uploadBase/images/$fileName';
-
+  static String audioUploadUrl(String fileName) => '$uploadBase/audio/$fileName';
+  static String imageUploadUrl(String fileName) => '$uploadBase/images/$fileName';
   static String documentUploadUrl(String fileName) =>
       '$uploadBase/documents/$fileName';
 
   // Call endpoints
   static String get callBase => '$baseUrl/Calls';
-
   static String callHistory(int groupId) => '$callBase/call-history/$groupId';
   static String createCallRoom = '$callBase/create-room';
   static String joinCallEndpoint = '$callBase/join-call';
   static String endCallEndpoint = '$callBase/end-call';
   static String getCallTokenEndpoint = '$callBase/get-token';
-
   static String callStats(int groupId) => '$callBase/call-stats/$groupId';
   static String userCallStats = '$callBase/user-stats';
-
   static String activeCall(int groupId) => '$callBase/active-call/$groupId';
 
   // WebSocket endpoints

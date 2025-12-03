@@ -30,18 +30,35 @@ class PasswordField extends StatelessWidget {
       controller: controller,
       obscureText: obscurePassword,
       validator: _validatePassword,
-      style: const TextStyle(fontSize: 16, fontFamily: 'Sarabun', color: AppTheme.textImportant),
+      style: const TextStyle(
+        fontSize: 16,
+        fontFamily: 'Sarabun',
+        color: AppTheme.textImportant,
+      ),
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.lock_outline, color: AppTheme.iconLessImportant, size: 20),
+        prefixIcon: Icon(
+          Icons.lock_outline,
+          color: AppTheme.iconLessImportant,
+          size: 20,
+        ),
         labelText: localizations.password,
         labelStyle: const TextStyle(
-            fontSize: 16, color: AppTheme.iconLessImportant, fontFamily: 'Sarabun', fontWeight: FontWeight.normal
+          fontSize: 16,
+          color: AppTheme.iconLessImportant,
+          fontFamily: 'Sarabun',
+          fontWeight: FontWeight.normal,
         ),
         floatingLabelBehavior: FloatingLabelBehavior.never,
         filled: true,
         fillColor: AppTheme.backgroundSecondary,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
             obscurePassword ? Icons.visibility_off : Icons.visibility,

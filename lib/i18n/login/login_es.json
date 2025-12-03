@@ -5,5 +5,7 @@
   "signIn": "Iniciar sesión",
   "dontHaveAccount": "¿No tienes una cuenta?",
   "signUp": "Regístrate",
-  "pleaseEnterAllFields": "Por favor ingresa todos los campos"
+  "pleaseEnterAllFields": "Por favor ingresa todos los campos",
+  "error": "Error",
+  "ok": "Aceptar"
 }

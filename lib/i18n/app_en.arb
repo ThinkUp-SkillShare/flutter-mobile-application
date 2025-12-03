@@ -12,6 +12,8 @@
   "dontHaveAccount": "Don't have an account?",
   "signUp": "Sign up",
   "pleaseEnterAllFields": "Please enter all fields",
+  "error": "Error",
+  "ok": "OK",
   "profile_joined": "Joined",
   "@profile_joined": {
     "description": "Tag joined {year}"

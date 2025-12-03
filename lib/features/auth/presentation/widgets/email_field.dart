@@ -27,17 +27,22 @@ class EmailField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.emailAddress,
       validator: _validateEmail,
-      style: const TextStyle(fontSize: 16, fontFamily: 'Sarabun', color: AppTheme.textImportant),
+      style: const TextStyle(
+          fontSize: 16, fontFamily: 'Sarabun', color: AppTheme.textImportant),
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.email_outlined, color: AppTheme.iconLessImportant, size: 20),
+        prefixIcon: Icon(Icons.email_outlined,
+            color: AppTheme.iconLessImportant, size: 20),
         labelText: localizations.email,
         labelStyle: const TextStyle(
-            fontSize: 16, color: AppTheme.iconLessImportant, fontFamily: 'Sarabun', fontWeight: FontWeight.normal
-        ),
+            fontSize: 16,
+            color: AppTheme.iconLessImportant,
+            fontFamily: 'Sarabun',
+            fontWeight: FontWeight.normal),
         floatingLabelBehavior: FloatingLabelBehavior.never,
         filled: true,
         fillColor: AppTheme.backgroundSecondary,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       ),
     );
